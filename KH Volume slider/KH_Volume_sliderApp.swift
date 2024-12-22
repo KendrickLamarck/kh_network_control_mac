@@ -10,8 +10,11 @@ import SwiftUI
 @main
 struct KH_Volume_sliderApp: App {
     var body: some Scene {
-        WindowGroup {
+        MenuBarExtra("KH Volume slider", systemImage: "hifispeaker.2") {
             ContentView()
+            Divider()
+            Button("Quit") { NSApplication.shared.terminate(nil) } // looks horrible, works.
         }
+        .menuBarExtraStyle(.window)
     }
 }
