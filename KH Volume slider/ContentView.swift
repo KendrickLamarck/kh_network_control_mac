@@ -21,7 +21,7 @@ struct ContentView: View {
             } maximumValueLabel: {
                 Text("120")
             } onEditingChanged: { editing in
-                if (editing) {
+                guard (!editing) else {
                     return
                 }
                 // Call Python script
