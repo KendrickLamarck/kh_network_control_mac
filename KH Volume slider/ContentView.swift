@@ -12,6 +12,13 @@ struct ContentView: View {
     @State private var volume: Double = 54
     private var scriptPath = URL(filePath: "/Users/lblume/code/kh_120/")
 
+    init() {
+        // This makes the startup really slow. Not good.
+        // I have no idea what this underscore is and why we have to do this here but
+        // we can just set the value normally in the body.
+        _volume = State(initialValue: self.getVolume())
+    }
+
     var body: some View {
         VStack {
             Text("Monitor volume")
@@ -29,11 +36,14 @@ struct ContentView: View {
             }
             Text("\(Int(volume)) dB")
             Divider()
-            Button("Quit") { NSApplication.shared.terminate(nil) } // looks horrible, works.
-            Button("Fetch") { getVolume() }
+            Button("Quit") {
+                NSApplication.shared.terminate(nil)
+            }
+            Button("Fetch") {
+                volume = getVolume()
+            }
         }
         .padding()
-        // .frame(width: 300, height: 150)
     }
     
     func createKHToolProcess(args: [String] = []) -> Process {
@@ -56,24 +66,32 @@ struct ContentView: View {
         try! process.run()
     }
     
-    func getVolume() {
+    func getVolume() -> Double {
         let backupPath = scriptPath.path + "/backup.json"
         let process = createKHToolProcess(args: ["--backup", backupPath])
         try! process.run()
-        struct KHJSON: Decodable {
-            let devices: [String: Device]
-            
-            struct Device: Decodable {
-                let commands: [String]
-            }
-        }
+        // TODO make this async or something and block slider editing while this runs.
+        process.waitUntilExit()
+
+        // This seems pretty dumb. Here, we should just use the single command to query the volume.
+        // In the future it might make sense to create a backup to query everything.
+        // Also what a pain in the ass. Is it REALLY not possible to do this with the JSONDecoder?
         do {
             let data = try Data(contentsOf: URL(filePath: backupPath))
-            let json = try JSONDecoder().decode(KHJSON.self, from: data)
-            print(json)
+            // let json = try JSONDecoder().decode(KHJSON.self, from: data)
+            let json = try JSONSerialization.jsonObject(with: data, options: [])
+            let json_dict = json as? [String: Any]
+            let devices = json_dict?["devices"] as? [String: Any]
+            let device = devices?.values.first as? [String: Any]
+            let commands = device?["commands"] as? [String: Any]
+            let audio = commands?["audio"] as? [String: Any]
+            let out = audio?["out"] as? [String: Any]
+            let level = out?["level"] as? Double
+            return level ?? 54
         } catch {
-            print("Error while reading json file.")
+            print("\(error.localizedDescription)")
         }
+        return -1
     }
 }
 
