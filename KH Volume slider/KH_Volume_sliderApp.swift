@@ -10,9 +10,6 @@ import SwiftUI
 @main
 struct KH_Volume_sliderApp: App {
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
         MenuBarExtra("KH Volume slider", systemImage: "hifispeaker.2") {
             ContentView()
         }
