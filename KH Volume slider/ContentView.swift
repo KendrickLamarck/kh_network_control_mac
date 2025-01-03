@@ -72,26 +72,36 @@ struct ContentView: View {
         try! process.run()
         // TODO make this async or something and block slider editing while this runs.
         process.waitUntilExit()
+        
+        struct KHJSON: Decodable {
+            let devices: [String: Device]
+            
+            struct Device: Decodable {
+                let commands: Commands
+                
+                struct Commands: Decodable {
+                    let audio: Audio
+                    
+                    struct Audio: Decodable {
+                        let out: Outparams
 
-        // This seems pretty dumb. Here, we should just use the single command to query the volume.
-        // In the future it might make sense to create a backup to query everything.
-        // Also what a pain in the ass. Is it REALLY not possible to do this with the JSONDecoder?
+                        struct Outparams: Decodable {
+                            let level: Double
+                        }
+                    }
+                }
+            }
+        }
+
         do {
             let data = try Data(contentsOf: URL(filePath: backupPath))
-            // let json = try JSONDecoder().decode(KHJSON.self, from: data)
-            let json = try JSONSerialization.jsonObject(with: data, options: [])
-            let json_dict = json as? [String: Any]
-            let devices = json_dict?["devices"] as? [String: Any]
-            let device = devices?.values.first as? [String: Any]
-            let commands = device?["commands"] as? [String: Any]
-            let audio = commands?["audio"] as? [String: Any]
-            let out = audio?["out"] as? [String: Any]
-            let level = out?["level"] as? Double
+            let json = try JSONDecoder().decode(KHJSON.self, from: data)
+            let level = json.devices.values.first?.commands.audio.out.level
             return level ?? 54
         } catch {
             print("\(error.localizedDescription)")
+            return -1
         }
-        return -1
     }
 }
 
