@@ -63,9 +63,10 @@ struct ContentView: View {
                 }
                 setVolume(volume: volume)
             }
-            .task {
-                await fetchVolume()
-            }
+            // We don't want to run this every time the window opens, only once. But how?
+            //.task {
+            //    await fetchVolume()
+            //}
             Text("\(Int(volume)) dB")
             Button(fetchButtonlabel) {
                 Task {
