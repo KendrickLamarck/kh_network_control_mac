@@ -183,7 +183,7 @@ struct ContentView: View {
                     var out: Outparams
 
                     struct Outparams: Codable {
-                        var level: Double
+                        var level: Double?
                         var eq3: Eq
                         
                         struct Eq: Codable {
@@ -266,12 +266,16 @@ struct ContentView: View {
     }
     
     func sendEqSettings() async {
-        await createBackup()
         guard let data = backupAsStruct() else {
             print("Failed to read backup file")
             return
         }
-        let updatedData = updateKhjsonWithEq(data)
+        var updatedData = updateKhjsonWithEq(data)
+        // set volume to nil manually. This lets us skip creating a backup, speeding up this
+        // operation considerably.
+        for k in updatedData.devices.keys {
+            updatedData.devices[k]?.commands.audio.out.level = nil
+        }
         // TODO we might not even need to do this with an intermediary file. We can try
         // sending the message with --expert.
         /*
