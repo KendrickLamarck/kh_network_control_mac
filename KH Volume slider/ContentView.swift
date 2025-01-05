@@ -12,8 +12,12 @@ struct ContentView: View {
     // This should really read out the actual current volume...
     @State private var volume: Double = 54
     @State private var fetchButtonlabel: String = "Fetch"
+    @State private var sendingEqSettings: Bool = false
     
-    struct EqBand {
+    // TODO this seemed like a good idea at the time, but maybe this should
+    // have the same structure as the json commands.
+    struct EqBand: Identifiable, Hashable {
+        var index: Int
         var boost: Double = 0
         var enabled: Bool = false
         var frequency: Double = 100
@@ -35,10 +39,14 @@ struct ContentView: View {
             case inversion = "INVERSION"
             var id: String { self.rawValue }
         }
+
+        var id: Int { index }
     }
-    
-    @State private var eqBands: [EqBand] = [EqBand(), EqBand()]
-    
+
+    @State private var eqBands: [EqBand] = (0..<20).map { i in EqBand(index: i) }
+    // @State private var selectedEqBand: EqBand = EqBand(index: -1)
+    @State private var selectedEqBand: Int = 0
+
     private var scriptPath = URL(filePath: "/Users/lblume/code/kh_120/")
 
     init() {
@@ -68,44 +76,68 @@ struct ContentView: View {
             //    await fetchVolume()
             //}
             Text("\(Int(volume)) dB")
-            Button(fetchButtonlabel) {
-                Task {
-                    await fetchVolume()
+            
+            if fetchButtonlabel == "Fetching..." {
+                ProgressView().scaleEffect(0.5).frame(height: 20)
+            } else {
+                Button(fetchButtonlabel) {
+                    Task {
+                        fetchButtonlabel = "Fetching..."
+                        await createBackup()
+                        fetchVolume()
+                        fetchEq()
+                        fetchButtonlabel = "Fetch"
+                    }
+                }
+                .frame(height: 20)
+            }
+            
+            Divider()
+            
+            HStack {
+                Picker("EQ Band:", selection: $selectedEqBand) {
+                    ForEach(eqBands) { band in
+                        Text("\(band.index + 1)")
+                    }
+                }
+                .frame(width: 100)
+                Picker("Type:", selection: $eqBands[selectedEqBand].type) {
+                    ForEach(EqBand.EqType.allCases) { type in
+                        Text(type.rawValue).tag(type)
+                    }
+                }
+                .frame(width: 160)
+                Toggle("Enable", isOn: $eqBands[selectedEqBand].enabled)
+            }
+            Slider(value: $eqBands[selectedEqBand].boost, in: -99...24)
+            Text("Boost: \(eqBands[selectedEqBand].boost, specifier: "%.1f") dB")
+            Slider(value: $eqBands[selectedEqBand].gain, in: -99...24)
+            Text("Gain: \(eqBands[selectedEqBand].gain, specifier: "%.1f") dB")
+            Slider(value: $eqBands[selectedEqBand].frequency, in: 10...24000)
+            Text("Frequency: \(eqBands[selectedEqBand].frequency, specifier: "%.1f") Hz")
+            Slider(value: $eqBands[selectedEqBand].q, in: 0.1...16)
+            Text("Q: \(eqBands[selectedEqBand].q, specifier: "%.1f")")
+            
+            if sendingEqSettings {
+                ProgressView().scaleEffect(0.5).frame(height: 20)
+            } else {
+                Button("Send EQ Settings") {
+                    Task {
+                        sendingEqSettings = true
+                        await sendEqSettings()
+                        sendingEqSettings = false
+                    }
                 }
             }
+            
             Divider()
-            Slider(value: $eqBands[0].boost, in: -99...24) {
-                Text("Boost: \(eqBands[0].boost, specifier: "%.1f") dB")
-            }
-            Slider(value: $eqBands[0].gain, in: -99...24) {
-                Text("Gain: \(eqBands[0].gain, specifier: "%.1f") dB")
-            }
-            Slider(value: $eqBands[0].frequency, in: 10...24000) {
-                Text("Frequency: \(eqBands[0].frequency, specifier: "%.1f") Hz")
-            }
-            Slider(value: $eqBands[0].q, in: 0.1...16) {
-                Text("Q: \(eqBands[0].q, specifier: "%.1f")")
-            }
-            Toggle("Enable", isOn: $eqBands[0].enabled)
-            Picker("Type", selection: $eqBands[0].type) {
-                Text("Parametric").tag(EqBand.EqType.parametric)
-                Text("Lo shelf").tag(EqBand.EqType.loshelf)
-                Text("Hi shelf").tag(EqBand.EqType.hishelf)
-                Text("Low pass").tag(EqBand.EqType.lowpass)
-                Text("High pass").tag(EqBand.EqType.highpass)
-                Text("Band pass").tag(EqBand.EqType.bandpass)
-                Text("Notch").tag(EqBand.EqType.notch)
-                Text("All pass").tag(EqBand.EqType.allpass)
-                Text("Hi 6 dB").tag(EqBand.EqType.hi6db)
-                Text("Lo 6 dB").tag(EqBand.EqType.lo6db)
-                Text("Inversion").tag(EqBand.EqType.inversion)
-            }
-            Divider()
+            
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
         }
         .padding()
+        .frame(height: 400)
     }
     
     func createKHToolProcess(args: [String] = []) -> Process {
@@ -135,29 +167,32 @@ struct ContentView: View {
         process.waitUntilExit()
     }
     
-    struct KHJSON: Decodable {
-        let devices: [String: Device]
+    struct KHJSON: Codable {
+        var devices: [String: Device]
 
-        struct Device: Decodable {
-            let commands: Commands
+        struct Device: Codable {
+            var product: String
+            var serial: String
+            var version: String
+            var commands: Commands
             
-            struct Commands: Decodable {
-                let audio: Audio
+            struct Commands: Codable {
+                var audio: Audio
                 
-                struct Audio: Decodable {
-                    let out: Outparams
+                struct Audio: Codable {
+                    var out: Outparams
 
-                    struct Outparams: Decodable {
-                        let level: Double
-                        let eq3: Eq
+                    struct Outparams: Codable {
+                        var level: Double
+                        var eq3: Eq
                         
-                        struct Eq: Decodable {
-                            let boost: [Double]
-                            let enabled: [Bool]
-                            let frequency: [Double]
-                            let gain: [Double]
-                            let q: [Double]
-                            let type: [String]
+                        struct Eq: Codable {
+                            var boost: [Double]
+                            var enabled: [Bool]
+                            var frequency: [Double]
+                            var gain: [Double]
+                            var q: [Double]
+                            var type: [String]
                         }
                     }
                 }
@@ -173,20 +208,97 @@ struct ContentView: View {
         return try? JSONDecoder().decode(KHJSON.self, from: data)
     }
     
-    func getVolume() async -> Double? {
-        await createBackup()
+    func getVolume() -> Double? {
         let json = backupAsStruct()
         return json?.devices.values.first?.commands.audio.out.level
     }
     
-    func fetchVolume() async {
-        fetchButtonlabel = "Fetching..."
-        guard let new_volume = await getVolume() else {
-            fetchButtonlabel = "Fetching failed"
+    func fetchVolume() {
+        guard let new_volume = getVolume() else {
+            print("fetching volume failed")
             return
         }
-        fetchButtonlabel = "Fetch"
         volume = new_volume
+    }
+    
+    func fetchEq() {
+        let json = backupAsStruct()
+        guard let eq = json?.devices.values.first?.commands.audio.out.eq3 else {
+            return
+        }
+        for i in 0..<20 {
+            eqBands[i].boost = eq.boost[i]
+            eqBands[i].enabled = eq.enabled[i]
+            eqBands[i].frequency = eq.frequency[i]
+            eqBands[i].gain = eq.gain[i]
+            eqBands[i].q = eq.q[i]
+            eqBands[i].type = EqBand.EqType(rawValue: eq.type[i]) ?? EqBand.EqType.parametric
+        }
+    }
+        
+    func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
+        guard var eq = data.devices.values.first?.commands.audio.out.eq3 else {
+            return data
+        }
+        var new_data = data
+        for i in 0..<20 {
+            eq.boost[i] = eqBands[i].boost
+            eq.enabled[i] = eqBands[i].enabled
+            eq.frequency[i] = eqBands[i].frequency
+            eq.gain[i] = eqBands[i].gain
+            eq.q[i] = eqBands[i].q
+            eq.type[i] = eqBands[i].type.rawValue
+        }
+        for k in new_data.devices.keys {
+            new_data.devices[k]?.commands.audio.out.eq3 = eq
+        }
+        return new_data
+    }
+    
+    func writeKHJSON(_ data: KHJSON, filename: String) {
+        let backupPath = scriptPath.appendingPathComponent(filename)
+        let jsonString = try? JSONEncoder().encode(data)
+        do {
+            try jsonString?.write(to: backupPath)
+        } catch {
+            print("Writing file failed.")
+        }
+    }
+    
+    func sendEqSettings() async {
+        await createBackup()
+        guard let data = backupAsStruct() else {
+            print("Failed to read backup file")
+            return
+        }
+        let updatedData = updateKhjsonWithEq(data)
+        // TODO we might not even need to do this with an intermediary file. We can try
+        // sending the message with --expert.
+        /*
+        guard let jsonData = try? JSONEncoder().encode(updatedData) else {
+            return
+        }
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else {
+            return
+        }
+        let process = createKHToolProcess(args: ["--expert", jsonString])
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            print("Error while sending eq settings to device.")
+        }
+         */
+        let filename = "eq_settings.json"
+        writeKHJSON(updatedData, filename: filename)
+        let backupPath = scriptPath.appendingPathComponent(filename)
+        let process = createKHToolProcess(args: ["--restore", backupPath.path()])
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            print("Error while sending eq settings to device.")
+        }
     }
 }
 
