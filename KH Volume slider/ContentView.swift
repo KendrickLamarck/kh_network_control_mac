@@ -9,10 +9,18 @@ import SwiftUI
 
 
 struct ContentView: View {
-    // This should really read out the actual current volume...
     @State private var volume: Double = 54
     @State private var fetchButtonlabel: String = "Fetch"
     @State private var sendingEqSettings: Bool = false
+    //@State private var eqBands2: [EqBand] = (0..<10).map { i in EqBand(index: i) }
+    // Really eqBands3
+    //@State private var eqBands: [EqBand] = (0..<20).map { i in EqBand(index: i) }
+    @State private var eqs: [[EqBand]] = [
+        (0..<10).map { i in EqBand(index: i) },
+        (0..<20).map { i in EqBand(index: i) }
+    ]
+    @State private var selectedEq: Int = 0
+    @State private var selectedEqBand: Int = 0
     
     // TODO this seemed like a good idea at the time, but maybe this should
     // have the same structure as the json commands.
@@ -77,10 +85,6 @@ struct ContentView: View {
         }
     }
 
-    @State private var eqBands: [EqBand] = (0..<20).map { i in EqBand(index: i) }
-    // @State private var selectedEqBand: EqBand = EqBand(index: -1)
-    @State private var selectedEqBand: Int = 0
-
     private var scriptPath = URL(filePath: "/Users/lblume/code/kh_120/")
 
     init() {
@@ -115,20 +119,31 @@ struct ContentView: View {
                         
             Divider()
             
+            Picker("EQ:", selection: $selectedEq) {
+                Text("eq2").tag(0)
+                Text("eq3").tag(1)
+            }
+            .frame(width: 150)
+            .onChange(of: selectedEq) {
+                // not enough
+                selectedEqBand = 0
+            }
+
+            
             HStack {
                 Picker("EQ Band:", selection: $selectedEqBand) {
-                    ForEach(eqBands) { band in
+                    ForEach(eqs[selectedEq]) { band in
                         Text("\(band.index + 1)")
                     }
                 }
-                .frame(width: 100)
-                Picker("Type:", selection: $eqBands[selectedEqBand].type) {
+                .frame(width: 120)
+                Picker("Type:", selection: $eqs[selectedEq][selectedEqBand].type) {
                     ForEach(EqBand.EqType.allCases) { type in
                         Text(type.rawValue).tag(type)
                     }
                 }
                 .frame(width: 160)
-                Toggle("Enabled", isOn: $eqBands[selectedEqBand].enabled)
+                Toggle("Enabled", isOn: $eqs[selectedEq][selectedEqBand].enabled)
                 if sendingEqSettings {
                     ProgressView().scaleEffect(0.5).frame(height: 20)
                 } else {
@@ -145,37 +160,37 @@ struct ContentView: View {
                 // TODO ForEach
                 GridRow {
                     Text("Frequency (Hz):")
-                    Slider(value: $eqBands[selectedEqBand].frequency, in: 10...24000)
+                    Slider(value: $eqs[selectedEq][selectedEqBand].frequency, in: 10...24000)
                     TextField(
                         "Frequency",
-                        value: $eqBands[selectedEqBand].frequency,
+                        value: $eqs[selectedEq][selectedEqBand].frequency,
                         format: .number.precision(.fractionLength(1))
                     ).frame(width:80)
                 }
                 GridRow {
                     Text("Boost (dB):")
-                    Slider(value: $eqBands[selectedEqBand].boost, in: -99...24)
+                    Slider(value: $eqs[selectedEq][selectedEqBand].boost, in: -99...24)
                     TextField(
                         "Boost",
-                        value: $eqBands[selectedEqBand].boost,
+                        value: $eqs[selectedEq][selectedEqBand].boost,
                         format: .number.precision(.fractionLength(1))
                     ).frame(width:80)
                 }
                 GridRow {
                     Text("Q:")
-                    Slider(value: $eqBands[selectedEqBand].q, in: 0.1...16)
+                    Slider(value: $eqs[selectedEq][selectedEqBand].q, in: 0.1...16)
                     TextField(
                         "Q",
-                        value: $eqBands[selectedEqBand].q,
+                        value: $eqs[selectedEq][selectedEqBand].q,
                         format: .number.precision(.fractionLength(1))
                     ).frame(width:80)
                 }
                 GridRow {
                     Text("Gain (dB):")
-                    Slider(value: $eqBands[selectedEqBand].gain, in: -99...24)
+                    Slider(value: $eqs[selectedEq][selectedEqBand].gain, in: -99...24)
                     TextField(
                         "Gain",
-                        value: $eqBands[selectedEqBand].gain,
+                        value: $eqs[selectedEq][selectedEqBand].gain,
                         format: .number.precision(.fractionLength(1))
                     ).frame(width:80)
                 }
@@ -258,35 +273,48 @@ struct ContentView: View {
     
     func fetchEq() {
         let json = backupAsStruct()
-        guard let eq = json?.devices.values.first?.commands.audio.out.eq3 else {
+        guard let out = json?.devices.values.first?.commands.audio.out else {
             return
         }
-        for i in 0..<20 {
-            eqBands[i].boost = eq.boost[i]
-            eqBands[i].enabled = eq.enabled[i]
-            eqBands[i].frequency = eq.frequency[i]
-            eqBands[i].gain = eq.gain[i]
-            eqBands[i].q = eq.q[i]
-            eqBands[i].type = EqBand.EqType(rawValue: eq.type[i]) ?? EqBand.EqType.parametric
+        for (j, eq) in [out.eq2, out.eq3].enumerated() {
+            for i in 0..<eqs[j].count {
+                eqs[j][i].boost = eq.boost[i]
+                eqs[j][i].enabled = eq.enabled[i]
+                eqs[j][i].frequency = eq.frequency[i]
+                eqs[j][i].gain = eq.gain[i]
+                eqs[j][i].q = eq.q[i]
+                eqs[j][i].type = EqBand.EqType(rawValue: eq.type[i]) ?? EqBand.EqType.parametric
+            }
         }
     }
         
     func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
-        guard var eq = data.devices.values.first?.commands.audio.out.eq3 else {
+        var new_data = data
+        guard var out = data.devices.values.first?.commands.audio.out else {
+            print("updating KHJSON with eq failed")
             return data
         }
-        var new_data = data
-        for i in 0..<20 {
-            eq.boost[i] = eqBands[i].boost
-            eq.enabled[i] = eqBands[i].enabled
-            eq.frequency[i] = eqBands[i].frequency
-            eq.gain[i] = eqBands[i].gain
-            eq.q[i] = eqBands[i].q
-            eq.type[i] = eqBands[i].type.rawValue
+        var eqs_ = [out.eq2, out.eq3]
+        for var (j, eq) in eqs_.enumerated() {
+            for i in 0..<eqs[j].count {
+                eq.boost[i] = eqs[j][i].boost
+                eq.boost[i] = eqs[j][i].boost
+                eq.enabled[i] = eqs[j][i].enabled
+                eq.frequency[i] = eqs[j][i].frequency
+                eq.gain[i] = eqs[j][i].gain
+                eq.q[i] = eqs[j][i].q
+                eq.type[i] = eqs[j][i].type.rawValue
+            }
         }
         for k in new_data.devices.keys {
-            new_data.devices[k]?.commands.audio.out.eq3 = eq
+            new_data.devices[k]?.commands.audio.out.eq2 = eqs_[0]
+            new_data.devices[k]?.commands.audio.out.eq3 = eqs_[1]
         }
+        // TODO this data is not being updated correctly
+        print("old data")
+        print(data)
+        print("new data")
+        print(new_data)
         return new_data
     }
     
