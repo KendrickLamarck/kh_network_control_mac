@@ -42,6 +42,40 @@ struct ContentView: View {
 
         var id: Int { index }
     }
+    
+    struct KHJSON: Codable {
+        var devices: [String: Device]
+
+        struct Device: Codable {
+            var product: String
+            var serial: String
+            var version: String
+            var commands: Commands
+            
+            struct Commands: Codable {
+                var audio: Audio
+                
+                struct Audio: Codable {
+                    var out: Outparams
+
+                    struct Outparams: Codable {
+                        var level: Double?
+                        var eq2: Eq
+                        var eq3: Eq
+
+                        struct Eq: Codable {
+                            var boost: [Double]
+                            var enabled: [Bool]
+                            var frequency: [Double]
+                            var gain: [Double]
+                            var q: [Double]
+                            var type: [String]
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     @State private var eqBands: [EqBand] = (0..<20).map { i in EqBand(index: i) }
     // @State private var selectedEqBand: EqBand = EqBand(index: -1)
@@ -72,26 +106,13 @@ struct ContentView: View {
                 setVolume(volume: volume)
             }
             // We don't want to run this every time the window opens, only once. But how?
-            //.task {
-            //    await fetchVolume()
-            //}
-            Text("\(Int(volume)) dB")
-            
-            if fetchButtonlabel == "Fetching..." {
-                ProgressView().scaleEffect(0.5).frame(height: 20)
-            } else {
-                Button(fetchButtonlabel) {
-                    Task {
-                        fetchButtonlabel = "Fetching..."
-                        await createBackup()
-                        fetchVolume()
-                        fetchEq()
-                        fetchButtonlabel = "Fetch"
-                    }
-                }
-                .frame(height: 20)
+            .task {
+                await createBackup()
+                fetchVolume()
+                fetchEq()
             }
-            
+            Text("\(Int(volume)) dB")
+                        
             Divider()
             
             HStack {
@@ -107,37 +128,84 @@ struct ContentView: View {
                     }
                 }
                 .frame(width: 160)
-                Toggle("Enable", isOn: $eqBands[selectedEqBand].enabled)
-            }
-            Slider(value: $eqBands[selectedEqBand].boost, in: -99...24)
-            Text("Boost: \(eqBands[selectedEqBand].boost, specifier: "%.1f") dB")
-            Slider(value: $eqBands[selectedEqBand].gain, in: -99...24)
-            Text("Gain: \(eqBands[selectedEqBand].gain, specifier: "%.1f") dB")
-            Slider(value: $eqBands[selectedEqBand].frequency, in: 10...24000)
-            Text("Frequency: \(eqBands[selectedEqBand].frequency, specifier: "%.1f") Hz")
-            Slider(value: $eqBands[selectedEqBand].q, in: 0.1...16)
-            Text("Q: \(eqBands[selectedEqBand].q, specifier: "%.1f")")
-            
-            if sendingEqSettings {
-                ProgressView().scaleEffect(0.5).frame(height: 20)
-            } else {
-                Button("Send EQ Settings") {
-                    Task {
-                        sendingEqSettings = true
-                        await sendEqSettings()
-                        sendingEqSettings = false
+                Toggle("Enabled", isOn: $eqBands[selectedEqBand].enabled)
+                if sendingEqSettings {
+                    ProgressView().scaleEffect(0.5).frame(height: 20)
+                } else {
+                    Button("Send EQ Settings") {
+                        Task {
+                            sendingEqSettings = true
+                            await sendEqSettings()
+                            sendingEqSettings = false
+                        }
                     }
                 }
             }
-            
+            Grid(alignment: .topLeading) {
+                // TODO ForEach
+                GridRow {
+                    Text("Frequency (Hz):")
+                    Slider(value: $eqBands[selectedEqBand].frequency, in: 10...24000)
+                    TextField(
+                        "Frequency",
+                        value: $eqBands[selectedEqBand].frequency,
+                        format: .number.precision(.fractionLength(1))
+                    ).frame(width:80)
+                }
+                GridRow {
+                    Text("Boost (dB):")
+                    Slider(value: $eqBands[selectedEqBand].boost, in: -99...24)
+                    TextField(
+                        "Boost",
+                        value: $eqBands[selectedEqBand].boost,
+                        format: .number.precision(.fractionLength(1))
+                    ).frame(width:80)
+                }
+                GridRow {
+                    Text("Q:")
+                    Slider(value: $eqBands[selectedEqBand].q, in: 0.1...16)
+                    TextField(
+                        "Q",
+                        value: $eqBands[selectedEqBand].q,
+                        format: .number.precision(.fractionLength(1))
+                    ).frame(width:80)
+                }
+                GridRow {
+                    Text("Gain (dB):")
+                    Slider(value: $eqBands[selectedEqBand].gain, in: -99...24)
+                    TextField(
+                        "Gain",
+                        value: $eqBands[selectedEqBand].gain,
+                        format: .number.precision(.fractionLength(1))
+                    ).frame(width:80)
+                }
+            }
+
             Divider()
-            
-            Button("Quit") {
-                NSApplication.shared.terminate(nil)
+
+            HStack {
+                if fetchButtonlabel == "Fetching..." {
+                    ProgressView().scaleEffect(0.5).frame(height: 20)
+                } else {
+                    Button(fetchButtonlabel) {
+                        Task {
+                            fetchButtonlabel = "Fetching..."
+                            await createBackup()
+                            fetchVolume()
+                            fetchEq()
+                            fetchButtonlabel = "Fetch"
+                        }
+                    }
+                    .frame(height: 20)
+                }
+                
+                Button("Quit") {
+                    NSApplication.shared.terminate(nil)
+                }
             }
         }
         .padding()
-        .frame(height: 400)
+        .frame(width: 550)
     }
     
     func createKHToolProcess(args: [String] = []) -> Process {
@@ -146,12 +214,12 @@ struct ContentView: View {
         process.currentDirectoryURL = scriptPath
         var argString = ""
         for arg in args {
-            argString += " \(arg)"
+            argString += " " + arg
         }
         process.arguments =
         ["-c",
          "./.venv/bin/python"
-         + " /Users/lblume/code/kh_120/khtool/khtool.py -i en0" + argString]
+         + " ./khtool/khtool.py -i en0" + argString]
         return process
     }
     
@@ -165,39 +233,6 @@ struct ContentView: View {
         let process = createKHToolProcess(args: ["--backup", backupPath])
         try! process.run()
         process.waitUntilExit()
-    }
-    
-    struct KHJSON: Codable {
-        var devices: [String: Device]
-
-        struct Device: Codable {
-            var product: String
-            var serial: String
-            var version: String
-            var commands: Commands
-            
-            struct Commands: Codable {
-                var audio: Audio
-                
-                struct Audio: Codable {
-                    var out: Outparams
-
-                    struct Outparams: Codable {
-                        var level: Double?
-                        var eq3: Eq
-                        
-                        struct Eq: Codable {
-                            var boost: [Double]
-                            var enabled: [Bool]
-                            var frequency: [Double]
-                            var gain: [Double]
-                            var q: [Double]
-                            var type: [String]
-                        }
-                    }
-                }
-            }
-        }
     }
     
     func backupAsStruct() -> KHJSON? {
@@ -276,23 +311,8 @@ struct ContentView: View {
         for k in updatedData.devices.keys {
             updatedData.devices[k]?.commands.audio.out.level = nil
         }
-        // TODO we might not even need to do this with an intermediary file. We can try
-        // sending the message with --expert.
-        /*
-        guard let jsonData = try? JSONEncoder().encode(updatedData) else {
-            return
-        }
-        guard let jsonString = String(data: jsonData, encoding: .utf8) else {
-            return
-        }
-        let process = createKHToolProcess(args: ["--expert", jsonString])
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            print("Error while sending eq settings to device.")
-        }
-         */
+        // We can unfortunately not send this with --expert because the request is too
+        // long.
         let filename = "eq_settings.json"
         writeKHJSON(updatedData, filename: filename)
         let backupPath = scriptPath.appendingPathComponent(filename)
