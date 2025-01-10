@@ -135,14 +135,12 @@ struct ContentView: View {
                     ForEach(eqs[selectedEq]) { band in
                         Text("\(band.index + 1)")
                     }
-                }
-                .frame(width: 120)
+                }.frame(width: 120)
                 Picker("Type:", selection: $eqs[selectedEq][selectedEqBand].type) {
                     ForEach(EqBand.EqType.allCases) { type in
                         Text(type.rawValue).tag(type)
                     }
-                }
-                .frame(width: 160)
+                }.frame(width: 160)
                 Toggle("Enabled", isOn: $eqs[selectedEq][selectedEqBand].enabled)
                 if sendingEqSettings {
                     ProgressView().scaleEffect(0.5).frame(height: 20)
@@ -289,32 +287,36 @@ struct ContentView: View {
     }
         
     func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
+        // This is dumb but updating values in structs seems to be a pain in the ass
         var new_data = data
-        guard var out = data.devices.values.first?.commands.audio.out else {
+        guard var out = new_data.devices.values.first?.commands.audio.out else {
             print("updating KHJSON with eq failed")
             return data
         }
-        var eqs_ = [out.eq2, out.eq3]
-        for var (j, eq) in eqs_.enumerated() {
-            for i in 0..<eqs[j].count {
-                eq.boost[i] = eqs[j][i].boost
-                eq.boost[i] = eqs[j][i].boost
-                eq.enabled[i] = eqs[j][i].enabled
-                eq.frequency[i] = eqs[j][i].frequency
-                eq.gain[i] = eqs[j][i].gain
-                eq.q[i] = eqs[j][i].q
-                eq.type[i] = eqs[j][i].type.rawValue
-            }
+        var eq2 = out.eq2
+        var eq3 = out.eq3
+        for i in 0..<10 {
+            let j = 0
+            eq2.boost[i] = eqs[j][i].boost
+            eq2.enabled[i] = eqs[j][i].enabled
+            eq2.frequency[i] = eqs[j][i].frequency
+            eq2.gain[i] = eqs[j][i].gain
+            eq2.q[i] = eqs[j][i].q
+            eq2.type[i] = eqs[j][i].type.rawValue
+        }
+        for i in 0..<20 {
+            let j = 1
+            eq3.boost[i] = eqs[j][i].boost
+            eq3.enabled[i] = eqs[j][i].enabled
+            eq3.frequency[i] = eqs[j][i].frequency
+            eq3.gain[i] = eqs[j][i].gain
+            eq3.q[i] = eqs[j][i].q
+            eq3.type[i] = eqs[j][i].type.rawValue
         }
         for k in new_data.devices.keys {
-            new_data.devices[k]?.commands.audio.out.eq2 = eqs_[0]
-            new_data.devices[k]?.commands.audio.out.eq3 = eqs_[1]
+            new_data.devices[k]?.commands.audio.out.eq2 = eq2
+            new_data.devices[k]?.commands.audio.out.eq3 = eq3
         }
-        // TODO this data is not being updated correctly
-        print("old data")
-        print(data)
-        print("new data")
-        print(new_data)
         return new_data
     }
     
