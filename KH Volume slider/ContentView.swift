@@ -287,35 +287,25 @@ struct ContentView: View {
     }
         
     func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
-        // This is dumb but updating values in structs seems to be a pain in the ass
         var new_data = data
-        guard var out = new_data.devices.values.first?.commands.audio.out else {
+        guard let out = new_data.devices.values.first?.commands.audio.out else {
             print("updating KHJSON with eq failed")
             return data
         }
-        var eq2 = out.eq2
-        var eq3 = out.eq3
-        for i in 0..<10 {
-            let j = 0
-            eq2.boost[i] = eqs[j][i].boost
-            eq2.enabled[i] = eqs[j][i].enabled
-            eq2.frequency[i] = eqs[j][i].frequency
-            eq2.gain[i] = eqs[j][i].gain
-            eq2.q[i] = eqs[j][i].q
-            eq2.type[i] = eqs[j][i].type.rawValue
-        }
-        for i in 0..<20 {
-            let j = 1
-            eq3.boost[i] = eqs[j][i].boost
-            eq3.enabled[i] = eqs[j][i].enabled
-            eq3.frequency[i] = eqs[j][i].frequency
-            eq3.gain[i] = eqs[j][i].gain
-            eq3.q[i] = eqs[j][i].q
-            eq3.type[i] = eqs[j][i].type.rawValue
+        var new_data_eqs = [out.eq2, out.eq3]
+        for j in 0..<eqs.count {
+            for i in 0..<eqs[j].count {
+                new_data_eqs[j].boost[i] = eqs[j][i].boost
+                new_data_eqs[j].enabled[i] = eqs[j][i].enabled
+                new_data_eqs[j].frequency[i] = eqs[j][i].frequency
+                new_data_eqs[j].gain[i] = eqs[j][i].gain
+                new_data_eqs[j].q[i] = eqs[j][i].q
+                new_data_eqs[j].type[i] = eqs[j][i].type.rawValue
+            }
         }
         for k in new_data.devices.keys {
-            new_data.devices[k]?.commands.audio.out.eq2 = eq2
-            new_data.devices[k]?.commands.audio.out.eq3 = eq3
+            new_data.devices[k]?.commands.audio.out.eq2 = new_data_eqs[0]
+            new_data.devices[k]?.commands.audio.out.eq3 = new_data_eqs[1]
         }
         return new_data
     }
