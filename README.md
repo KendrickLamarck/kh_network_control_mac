@@ -16,6 +16,7 @@ Prerequisites:
 Create a directory in your home directory. The default is `~/code/kh_120`. Clone the dependencies into this directory:
 
 ``` sh
+mkdir -p ~/code/kh_120
 cd ~/code/kh_120
 git clone git@github.com:schwinn/khtool.git
 git clone git@github.com:KendrickLamarck/kh_network_control_mac.git
@@ -24,11 +25,17 @@ git clone git@github.com:KendrickLamarck/kh_network_control_mac.git
 Now create a python venv in the directory and install the necessary python library:
 
 ``` sh
-python3 -m .venv
+python3 -m venv .venv
 source .venv/bin/activate
-pip install install https://github.com/schwinn/pyssc/archive/master.zip#egg=pyssc
+pip install https://github.com/schwinn/pyssc/archive/master.zip#egg=pyssc
 ```
 
-Now open `KH Volume slider.xcodeproj` in Xcode, build and run the app.
+Make sure the network interface assumed by the GUI is correct:
 
-I can imagine the last step won't work because of code signage/ownership issues or something.
+``` sh
+python khtool/khtool.py -i en0 -q
+```
+
+This command should produce a bunch of output. If not, you need to find out the correct interface name and change it in `init()` in `KH Volume slider/ContentView.swift`.
+
+Now open `KH Volume slider.xcodeproj` in Xcode, build and run the app. At this point we probably get stuck because of code signage/ownership issues or something.
