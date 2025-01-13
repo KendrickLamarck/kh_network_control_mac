@@ -11,7 +11,7 @@ Prerequisites:
 * Install Xcode
 * Make sure you have python3
 
-**Note:** You can use a different main path (for auxiliary files), python executable and khtoolPath, but if you do, you have to change the variables in `init()` in `ContentView.swift`.
+**Note:** You can use a different main path (for auxiliary files), python executable and khtoolPath, but if you do, you have to change the variables in `init()` in `KH Volume slider/ContentView.swift`.
 
 Create a directory in your home directory. The default is `~/code/kh_120`. Clone the dependencies into this directory:
 
