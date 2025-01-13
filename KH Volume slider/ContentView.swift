@@ -32,7 +32,7 @@ struct ContentView: View {
         var gain: Double = 0
         var q: Double = 0.7
         var type: EqType = EqType.parametric
-        
+
         enum EqType: String, CaseIterable, Identifiable {
             case parametric = "PARAMETRIC"
             case loshelf = "LOSHELF"
@@ -50,7 +50,7 @@ struct ContentView: View {
 
         var id: Int { index }
     }
-    
+
     struct KHJSON: Codable {
         var devices: [String: Device]
 
@@ -129,7 +129,6 @@ struct ContentView: View {
                 selectedEqBand = 0
             }
 
-            
             HStack {
                 Picker("EQ Band:", selection: $selectedEqBand) {
                     ForEach(eqs[selectedEq]) { band in
