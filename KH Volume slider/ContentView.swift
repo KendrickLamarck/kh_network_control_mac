@@ -9,6 +9,15 @@ import SwiftUI
 
 
 struct ContentView: View {
+    // ####### SET THESE VARIABLES #####################################################
+    private var scriptPath: URL = URL.homeDirectory.appending(path: "code/kh_120")
+    // Path to python executable relative to scriptPath
+    private let pythonPath: String = "./.venv/bin/python"
+    // Path to khtool script relative to scriptPath
+    private let khtoolPath: String = "./khtool/khtool.py"
+    private let networkInterface: String = "en0"
+    // #################################################################################
+
     @State private var volume: Double = 54
     @State private var fetchButtonlabel: String = "Fetch"
     @State private var sendingEqSettings: Bool = false
@@ -84,8 +93,6 @@ struct ContentView: View {
             }
         }
     }
-
-    private var scriptPath = URL(filePath: "/Users/lblume/code/kh_120/")
 
     init() {
         // This makes the startup really slow. Not good.
@@ -228,10 +235,10 @@ struct ContentView: View {
         for arg in args {
             argString += " " + arg
         }
-        process.arguments =
-        ["-c",
-         "./.venv/bin/python"
-         + " ./khtool/khtool.py -i en0" + argString]
+        process.arguments = [
+          "-c",
+          "\(pythonPath) \(khtoolPath) -i \(networkInterface)" + argString
+        ]
         return process
     }
     
@@ -241,14 +248,14 @@ struct ContentView: View {
     }
 
     func createBackup() async {
-        let backupPath = scriptPath.path + "/backup.json"
+        let backupPath = scriptPath.path + "/gui_backup.json"
         let process = createKHToolProcess(args: ["--backup", backupPath])
         try! process.run()
         process.waitUntilExit()
     }
     
     func backupAsStruct() -> KHJSON? {
-        let backupPath = scriptPath.path + "/backup.json"
+        let backupPath = scriptPath.path + "/gui_backup.json"
         guard let data = try? Data(contentsOf: URL(filePath: backupPath)) else {
             return nil
         }
@@ -310,7 +317,7 @@ struct ContentView: View {
     }
     
     func writeKHJSON(_ data: KHJSON, filename: String) {
-        let backupPath = scriptPath.appendingPathComponent(filename)
+        let backupPath = scriptPath.appending(path: filename)
         let jsonString = try? JSONEncoder().encode(data)
         do {
             try jsonString?.write(to: backupPath)
@@ -332,9 +339,10 @@ struct ContentView: View {
         }
         // We can unfortunately not send this with --expert because the request is too
         // long.
-        let filename = "eq_settings.json"
+        // TODO does this file need to persist or can we delete it after sending the settings?
+        let filename = "gui_eq_settings.json"
         writeKHJSON(updatedData, filename: filename)
-        let backupPath = scriptPath.appendingPathComponent(filename)
+        let backupPath = scriptPath.appending(path: filename)
         let process = createKHToolProcess(args: ["--restore", backupPath.path()])
         do {
             try process.run()
