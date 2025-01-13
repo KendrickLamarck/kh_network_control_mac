@@ -27,6 +27,7 @@ struct Eq: Codable {
         case hi6db = "HI6DB"
         case lo6db = "LO6DB"
         case inversion = "INVERSION"
+
         var id: String { self.rawValue }
     }
 }
@@ -88,9 +89,6 @@ struct ContentView: View {
     @State internal var volume: Double = 54
     @State private var fetchButtonlabel: String = "Fetch"
     @State private var sendingEqSettings: Bool = false
-    //@State private var eqBands2: [EqBand] = (0..<10).map { i in EqBand(index: i) }
-    // Really eqBands3
-    //@State private var eqBands: [EqBand] = (0..<20).map { i in EqBand(index: i) }
     @State private var eqs: [Eq] = [10, 20].map({numBands in
         Eq(
             boost: Array(repeating: 0.0, count: numBands),
@@ -249,15 +247,15 @@ struct ContentView: View {
     }
 
     func backupDevice() async {
-        let backupPath = scriptPath.path + "/gui_backup.json"
-        let process = createKHToolProcess(args: ["--backup", backupPath])
+        let backupPath = scriptPath.appending(path: "gui_backup.json")
+        let process = createKHToolProcess(args: ["--backup", backupPath.path])
         try! process.run()
         process.waitUntilExit()
     }
     
     func readBackupAsStruct() -> KHJSON? {
-        let backupPath = scriptPath.path + "/gui_backup.json"
-        guard let data = try? Data(contentsOf: URL(filePath: backupPath)) else {
+        let backupPath = scriptPath.appending(path: "gui_backup.json")
+        guard let data = try? Data(contentsOf: backupPath) else {
             return nil
         }
         return try? JSONDecoder().decode(KHJSON.self, from: data)
