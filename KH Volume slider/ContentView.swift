@@ -9,14 +9,21 @@ import SwiftUI
 
 
 struct ContentView: View {
-    // ####### SET THESE VARIABLES #####################################################
-    private var scriptPath: URL = URL.homeDirectory.appending(path: "code/kh_120")
-    // Path to python executable relative to scriptPath
-    private let pythonPath: String = "./.venv/bin/python"
-    // Path to khtool script relative to scriptPath
-    private let khtoolPath: String = "./khtool/khtool.py"
-    private let networkInterface: String = "en0"
-    // #################################################################################
+    private var scriptPath: URL
+    private var pythonPath: URL
+    private var khtoolPath: URL
+    private var networkInterface: String
+    
+    init() {
+        // ####### SET THESE VARIABLES #######################################
+        self.scriptPath = URL.homeDirectory.appending(path: "code/kh_120")
+        self.pythonPath = self.scriptPath.appending(path: ".venv/bin/python")
+        self.khtoolPath = self.scriptPath.appending(path: "khtool/khtool.py")
+        self.networkInterface = "en0"
+        // ###################################################################
+        
+        //_volume = State(initialValue: self.getVolume())
+    }
 
     @State private var volume: Double = 54
     @State private var fetchButtonlabel: String = "Fetch"
@@ -94,13 +101,6 @@ struct ContentView: View {
         }
     }
 
-    init() {
-        // This makes the startup really slow. Not good.
-        // I have no idea what this underscore is and why we have to do this here but
-        // we can just set the value normally in the body.
-        //_volume = State(initialValue: self.getVolume())
-    }
-
     var body: some View {
         VStack {
             Text("Monitor volume")
@@ -118,9 +118,7 @@ struct ContentView: View {
             }
             // We don't want to run this every time the window opens, only once. But how?
             .task {
-                await createBackup()
-                fetchVolume()
-                fetchEq()
+                await backupAndFetch()
             }
             Text("\(Int(volume)) dB")
                         
@@ -208,11 +206,7 @@ struct ContentView: View {
                 } else {
                     Button(fetchButtonlabel) {
                         Task {
-                            fetchButtonlabel = "Fetching..."
-                            await createBackup()
-                            fetchVolume()
-                            fetchEq()
-                            fetchButtonlabel = "Fetch"
+                            await backupAndFetch()
                         }
                     }
                     .frame(height: 20)
@@ -237,7 +231,7 @@ struct ContentView: View {
         }
         process.arguments = [
           "-c",
-          "\(pythonPath) \(khtoolPath) -i \(networkInterface)" + argString
+          "\(pythonPath.path) \(khtoolPath.path) -i \(networkInterface)" + argString
         ]
         return process
     }
@@ -290,6 +284,14 @@ struct ContentView: View {
                 eqs[j][i].type = EqBand.EqType(rawValue: eq.type[i]) ?? EqBand.EqType.parametric
             }
         }
+    }
+    
+    func backupAndFetch() async {
+        fetchButtonlabel = "Fetching..."
+        await createBackup()
+        fetchVolume()
+        fetchEq()
+        fetchButtonlabel = "Fetch"
     }
         
     func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
