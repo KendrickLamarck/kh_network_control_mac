@@ -13,9 +13,9 @@ struct EqSlider: View {
     var unit: String?
     var range: ClosedRange<Double>
 
-    @State var eqs: [Eq]
-    @State var selectedEq: Int = 0
-    @State var selectedEqBand: Int = 0
+    var eqs: [Eq]
+    var selectedEq: Int
+    var selectedEqBand: Int
     
     internal struct SliderData: Identifiable {
         let binding: Binding<[Double]>
