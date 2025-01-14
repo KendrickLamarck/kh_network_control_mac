@@ -7,79 +7,6 @@
 
 import SwiftUI
 
-struct Eq: Codable {
-    var boost: [Double]
-    var enabled: [Bool]
-    var frequency: [Double]
-    var gain: [Double]
-    var q: [Double]
-    var type: [String]
-
-    enum EqType: String, CaseIterable, Identifiable {
-        case parametric = "PARAMETRIC"
-        case loshelf = "LOSHELF"
-        case hishelf = "HISHELF"
-        case lowpass = "LOWPASS"
-        case highpass = "HIGHPASS"
-        case bandpass = "BANDPASS"
-        case notch = "NOTCH"
-        case allpass = "ALLPASS"
-        case hi6db = "HI6DB"
-        case lo6db = "LO6DB"
-        case inversion = "INVERSION"
-
-        var id: String { self.rawValue }
-    }
-}
-
-struct KHJSON: Codable {
-    var devices: [String: Device]
- 
-    struct Device: Codable {
-        var product: String
-        var serial: String
-        var version: String
-        var commands: Commands
-        
-        struct Commands: Codable {
-            var audio: Audio
-            
-            struct Audio: Codable {
-                var out: Outparams
-
-                struct Outparams: Codable {
-                    var level: Double?
-                    var eq2: Eq
-                    var eq3: Eq
-                }
-            }
-        }
-    }
-}
-
-// currently unused. Have to figure out how to iterate over eq properties or find a
-// different solution.
-struct EqSlider: View {
-    var name: String
-    var unit: String
-    var range: ClosedRange<Double>
-
-    @State var eqs: [Eq]
-    @State var selectedEq: Int = 0
-    @State var selectedEqBand: Int = 0
-    
-    var body: some View {
-        Text("\(name) (\(unit))")
-        Slider(value: $eqs[selectedEq].frequency[selectedEqBand], in: range)
-        TextField(
-            "Frequency",
-            value: $eqs[selectedEq].frequency[selectedEqBand],
-            format: .number.precision(.fractionLength(1))
-        ).frame(width:80)
-    }
-}
-
-
 struct ContentView: View {
     private var scriptPath: URL
     private var pythonPath: URL
@@ -121,11 +48,10 @@ struct ContentView: View {
             } maximumValueLabel: {
                 Text("120")
             } onEditingChanged: { editing in
-                guard !editing else {
-                    return
-                }
-                Task {
-                    await sendVolumeToDevice()
+                if !editing {
+                    Task {
+                        await sendVolumeToDevice()
+                    }
                 }
             }
             // We don't want to run this every time the window opens, only once. But how?
@@ -172,42 +98,44 @@ struct ContentView: View {
                 }
             }
             Grid(alignment: .topLeading) {
-                // TODO ForEach
-                GridRow {
-                    Text("Frequency (Hz):")
-                    Slider(value: $eqs[selectedEq].frequency[selectedEqBand], in: 10...24000)
-                    TextField(
-                        "Frequency",
-                        value: $eqs[selectedEq].frequency[selectedEqBand],
-                        format: .number.precision(.fractionLength(1))
-                    ).frame(width:80)
-                }
-                GridRow {
-                    Text("Boost (dB):")
-                    Slider(value: $eqs[selectedEq].boost[selectedEqBand], in: -99...24)
-                    TextField(
-                        "Boost",
-                        value: $eqs[selectedEq].boost[selectedEqBand],
-                        format: .number.precision(.fractionLength(1))
-                    ).frame(width:80)
-                }
-                GridRow {
-                    Text("Q:")
-                    Slider(value: $eqs[selectedEq].q[selectedEqBand], in: 0.1...16)
-                    TextField(
-                        "Q",
-                        value: $eqs[selectedEq].q[selectedEqBand],
-                        format: .number.precision(.fractionLength(1))
-                    ).frame(width:80)
-                }
-                GridRow {
-                    Text("Gain (dB):")
-                    Slider(value: $eqs[selectedEq].gain[selectedEqBand], in: -99...24)
-                    TextField(
-                        "Gain",
-                        value: $eqs[selectedEq].gain[selectedEqBand],
-                        format: .number.precision(.fractionLength(1))
-                    ).frame(width:80)
+                let sliders: [EqSlider.SliderData] = [
+                    EqSlider.SliderData(
+                        binding: $eqs[selectedEq].frequency,
+                        name: "Frequency",
+                        unit: "Hz",
+                        range: 10...24000
+                    ),
+                    EqSlider.SliderData(
+                        binding: $eqs[selectedEq].boost,
+                        name: "Boost",
+                        unit: "dB",
+                        range: -99...24
+                    ),
+                    EqSlider.SliderData(
+                        binding: $eqs[selectedEq].q,
+                        name: "Q",
+                        unit: nil,
+                        range: 0.1...16
+                    ),
+                    EqSlider.SliderData(
+                        binding: $eqs[selectedEq].gain,
+                        name: "Gain",
+                        unit: "dB",
+                        range: -99...24
+                    )
+                ]
+                ForEach(sliders) { sliderdata in
+                    GridRow {
+                        EqSlider(
+                            binding: sliderdata.binding,
+                            name: sliderdata.name,
+                            unit: sliderdata.unit,
+                            range: sliderdata.range,
+                            eqs: eqs,
+                            selectedEq: selectedEq,
+                            selectedEqBand: selectedEqBand
+                        )
+                    }
                 }
             }
 
@@ -344,7 +272,7 @@ struct ContentView: View {
         let filename = "gui_eq_settings.json"
         writeKHJSONToFile(updatedData, filename: filename)
         let backupPath = scriptPath.appending(path: filename)
-        try? await runKHToolProcess(args: ["--restore", backupPath.path()])
+        try? await runKHToolProcess(args: ["--restore", backupPath.path])
     }
 }
 
