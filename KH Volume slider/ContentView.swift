@@ -87,7 +87,7 @@ struct ContentView: View {
     private var networkInterface: String
 
     @State internal var volume: Double = 54
-    @State private var fetchButtonlabel: String = "Fetch"
+    @State private var fetching: Bool = false
     @State private var sendingEqSettings: Bool = false
     @State private var eqs: [Eq] = [10, 20].map({numBands in
         Eq(
@@ -157,6 +157,7 @@ struct ContentView: View {
                 }.frame(width: 160)
                 Toggle("Enabled", isOn: $eqs[selectedEq].enabled[selectedEqBand])
                 if sendingEqSettings {
+                    Text("Sending...")
                     ProgressView().scaleEffect(0.5).frame(height: 20)
                 } else {
                     Button("Send EQ Settings") {
@@ -211,10 +212,11 @@ struct ContentView: View {
             Divider()
 
             HStack {
-                if fetchButtonlabel == "Fetching..." {
+                if fetching {
+                    Text("Fetching...")
                     ProgressView().scaleEffect(0.5).frame(height: 20)
                 } else {
-                    Button(fetchButtonlabel) {
+                    Button("Fetch") {
                         Task {
                             await backupAndFetch()
                         }
@@ -281,11 +283,11 @@ struct ContentView: View {
     }
     
     func backupAndFetch() async {
-        fetchButtonlabel = "Fetching..."
+        fetching = true
         await backupDevice()
         readVolumeFromBackup()
         readEqFromBackup()
-        fetchButtonlabel = "Fetch"
+        fetching = false
     }
         
     func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
