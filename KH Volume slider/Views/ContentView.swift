@@ -78,23 +78,26 @@ struct ContentView: View {
                         Text("\(i)").tag(i - 1)
                     }
                 }.frame(width: 120)
+                
                 Picker("Type:", selection: $eqs[selectedEq].type[selectedEqBand]) {
                     ForEach(Eq.EqType.allCases) { type in
                         Text(type.rawValue).tag(type.rawValue)
                     }
                 }.frame(width: 160)
+                
                 Toggle("Enabled", isOn: $eqs[selectedEq].enabled[selectedEqBand])
-                if sendingEqSettings {
-                    Text("Sending...")
-                    ProgressView().scaleEffect(0.5).frame(height: 20)
-                } else {
-                    Button("Send EQ Settings") {
-                        Task {
-                            sendingEqSettings = true
-                            await sendEqToDevice()
-                            sendingEqSettings = false
-                        }
+                
+                Button(sendingEqSettings ? "Sending..." : "Send EQ settings") {
+                    Task {
+                        sendingEqSettings = true
+                        await sendEqToDevice()
+                        sendingEqSettings = false
                     }
+                }
+                .frame(height: 20)
+                .disabled(sendingEqSettings)
+                if sendingEqSettings {
+                    ProgressView().scaleEffect(0.5).frame(height: 20)
                 }
             }
             Grid(alignment: .topLeading) {
@@ -142,22 +145,22 @@ struct ContentView: View {
             Divider()
 
             HStack {
-                if fetching {
-                    Text("Fetching...")
-                    ProgressView().scaleEffect(0.5).frame(height: 20)
-                } else {
-                    Button("Fetch") {
-                        Task {
-                            await backupAndFetch()
-                        }
+                Button(fetching ? "Fetching..." : "Fetch") {
+                    Task {
+                        await backupAndFetch()
                     }
-                    .frame(height: 20)
                 }
-                
+                .frame(height: 20)
+                .disabled(fetching)
+                if fetching {
+                    ProgressView().scaleEffect(0.5).frame(height: 20)
+                }
+
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
             }
+            
         }
         .padding()
         .frame(width: 550)
@@ -188,7 +191,7 @@ struct ContentView: View {
         let backupPath = scriptPath.appending(path: "gui_backup.json")
         try? await runKHToolProcess(args: ["--backup", backupPath.path])
     }
-    
+
     func readBackupAsStruct() -> KHJSON? {
         let backupPath = scriptPath.appending(path: "gui_backup.json")
         guard let data = try? Data(contentsOf: backupPath) else {
@@ -196,7 +199,7 @@ struct ContentView: View {
         }
         return try? JSONDecoder().decode(KHJSON.self, from: data)
     }
-    
+
     func readVolumeFromBackup() {
         let json = readBackupAsStruct()
         guard let new_volume = json?.devices.values.first?.commands.audio.out.level else {
@@ -241,16 +244,6 @@ struct ContentView: View {
         return new_data
     }
     
-    func writeKHJSONToFile(_ data: KHJSON, filename: String) {
-        let backupPath = scriptPath.appending(path: filename)
-        let jsonString = try? JSONEncoder().encode(data)
-        do {
-            try jsonString?.write(to: backupPath)
-        } catch {
-            print("Writing file failed.")
-        }
-    }
-    
     func sendVolumeToDevice() async {
         try? await runKHToolProcess(args: ["--level", "\(Int(volume))"])
     }
@@ -269,10 +262,9 @@ struct ContentView: View {
         // We can unfortunately not send this with --expert because the request is too
         // long.
         // TODO does this file need to persist or can we delete it after sending the settings?
-        let filename = "gui_eq_settings.json"
-        writeKHJSONToFile(updatedData, filename: filename)
-        let backupPath = scriptPath.appending(path: filename)
-        try? await runKHToolProcess(args: ["--restore", backupPath.path])
+        let filePath = scriptPath.appending(path: "gui_eq_settings.json")
+        updatedData.writeToFile(filePath: filePath)
+        try? await runKHToolProcess(args: ["--restore", filePath.path])
     }
 }
 

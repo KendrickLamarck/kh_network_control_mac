@@ -5,6 +5,8 @@
 //  Created by Leander Blume on 14.01.25.
 //
 
+import SwiftUI
+
 struct Eq: Codable {
     var boost: [Double]
     var enabled: [Bool]
@@ -51,6 +53,15 @@ struct KHJSON: Codable {
                     var eq3: Eq
                 }
             }
+        }
+    }
+
+    func writeToFile(filePath: URL) {
+        let jsonString = try? JSONEncoder().encode(self)
+        do {
+            try jsonString?.write(to: filePath)
+        } catch {
+            print("Writing file failed.")
         }
     }
 }
