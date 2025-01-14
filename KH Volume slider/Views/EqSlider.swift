@@ -13,8 +13,6 @@ struct EqSlider: View {
     var unit: String?
     var range: ClosedRange<Double>
 
-    var eqs: [Eq]
-    var selectedEq: Int
     var selectedEqBand: Int
     
     internal struct SliderData: Identifiable {

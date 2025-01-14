@@ -134,8 +134,6 @@ struct ContentView: View {
                             name: sliderdata.name,
                             unit: sliderdata.unit,
                             range: sliderdata.range,
-                            eqs: eqs,
-                            selectedEq: selectedEq,
                             selectedEqBand: selectedEqBand
                         )
                     }
@@ -166,7 +164,7 @@ struct ContentView: View {
         .frame(width: 550)
     }
     
-    func runKHToolProcess(args: [String]) async throws {
+    func runKHToolProcess(args: [String]) async {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
         process.currentDirectoryURL = scriptPath
@@ -189,7 +187,7 @@ struct ContentView: View {
 
     func backupDevice() async {
         let backupPath = scriptPath.appending(path: "gui_backup.json")
-        try? await runKHToolProcess(args: ["--backup", backupPath.path])
+        await runKHToolProcess(args: ["--backup", backupPath.path])
     }
 
     func readBackupAsStruct() -> KHJSON? {
@@ -245,7 +243,7 @@ struct ContentView: View {
     }
     
     func sendVolumeToDevice() async {
-        try? await runKHToolProcess(args: ["--level", "\(Int(volume))"])
+        await runKHToolProcess(args: ["--level", "\(Int(volume))"])
     }
 
     func sendEqToDevice() async {
@@ -261,10 +259,14 @@ struct ContentView: View {
         }
         // We can unfortunately not send this with --expert because the request is too
         // long.
-        // TODO does this file need to persist or can we delete it after sending the settings?
+        // TODO we can delete the file after running this function. What's
         let filePath = scriptPath.appending(path: "gui_eq_settings.json")
-        updatedData.writeToFile(filePath: filePath)
-        try? await runKHToolProcess(args: ["--restore", filePath.path])
+        do {
+            try updatedData.writeToFile(filePath: filePath)
+        } catch {
+            print("Writing eq settings to file failed")
+        }
+        await runKHToolProcess(args: ["--restore", filePath.path])
     }
 }
 

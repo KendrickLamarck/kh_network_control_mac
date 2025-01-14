@@ -56,12 +56,7 @@ struct KHJSON: Codable {
         }
     }
 
-    func writeToFile(filePath: URL) {
-        let jsonString = try? JSONEncoder().encode(self)
-        do {
-            try jsonString?.write(to: filePath)
-        } catch {
-            print("Writing file failed.")
-        }
+    func writeToFile(filePath: URL) throws {
+        try JSONEncoder().encode(self).write(to: filePath)
     }
 }
