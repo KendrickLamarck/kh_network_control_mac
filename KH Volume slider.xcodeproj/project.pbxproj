@@ -32,9 +32,6 @@
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		C5B99A552D1DB3B7003366EB /* Exceptions for "KH Volume slider" folder in "KH Volume slider" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			assetTagsByRelativePath = {
-				Resources/khtool/khtool.py = (New, );
-			};
 			membershipExceptions = (
 				Assets.xcassets,
 				"Preview Content/Preview Assets.xcassets",
@@ -187,9 +184,6 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				KnownAssetTags = (
-					New,
-				);
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
