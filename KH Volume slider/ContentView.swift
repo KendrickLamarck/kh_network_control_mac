@@ -124,7 +124,9 @@ struct ContentView: View {
                 guard !editing else {
                     return
                 }
-                sendVolumeToDevice()
+                Task {
+                    await sendVolumeToDevice()
+                }
             }
             // We don't want to run this every time the window opens, only once. But how?
             .task {
@@ -233,7 +235,7 @@ struct ContentView: View {
         .frame(width: 550)
     }
     
-    func createKHToolProcess(args: [String]) -> Process {
+    func runKHToolProcess(args: [String]) async throws {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
         process.currentDirectoryURL = scriptPath
@@ -245,14 +247,18 @@ struct ContentView: View {
           "-c",
           "\(pythonPath.path) \(khtoolPath.path) -i \(networkInterface)" + argString
         ]
-        return process
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            // TODO print process output with pipe or something
+            print("Process failed.")
+        }
     }
 
     func backupDevice() async {
         let backupPath = scriptPath.appending(path: "gui_backup.json")
-        let process = createKHToolProcess(args: ["--backup", backupPath.path])
-        try! process.run()
-        process.waitUntilExit()
+        try? await runKHToolProcess(args: ["--backup", backupPath.path])
     }
     
     func readBackupAsStruct() -> KHJSON? {
@@ -317,9 +323,8 @@ struct ContentView: View {
         }
     }
     
-    func sendVolumeToDevice() {
-        let process = createKHToolProcess(args: ["--level", "\(Int(volume))"])
-        try! process.run()
+    func sendVolumeToDevice() async {
+        try? await runKHToolProcess(args: ["--level", "\(Int(volume))"])
     }
 
     func sendEqToDevice() async {
@@ -339,13 +344,7 @@ struct ContentView: View {
         let filename = "gui_eq_settings.json"
         writeKHJSONToFile(updatedData, filename: filename)
         let backupPath = scriptPath.appending(path: filename)
-        let process = createKHToolProcess(args: ["--restore", backupPath.path()])
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            print("Error while sending eq settings to device.")
-        }
+        try? await runKHToolProcess(args: ["--restore", backupPath.path()])
     }
 }
 
