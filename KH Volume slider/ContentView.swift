@@ -233,7 +233,7 @@ struct ContentView: View {
         .frame(width: 550)
     }
     
-    func createKHToolProcess(args: [String] = []) -> Process {
+    func createKHToolProcess(args: [String]) -> Process {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
         process.currentDirectoryURL = scriptPath
