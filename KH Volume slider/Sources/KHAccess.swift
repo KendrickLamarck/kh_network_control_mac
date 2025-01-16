@@ -79,13 +79,23 @@ import SwiftUI
     }
 
     func backupDevice() async throws {
-        let backupPath = scriptPath.appending(path: "gui_backup.json")
-        try await runKHToolProcess(args: ["--backup", backupPath.path])
+        guard let backupPath = Bundle.main.path(
+                forResource: "gui_backup",
+                ofType: "json"
+        ) else {
+            throw KHAccessError.fileError
+        }
+        try await runKHToolProcess(args: ["--backup", "\"" + backupPath + "\""])
     }
 
     func readBackupAsStruct() throws -> KHJSON {
-        let backupPath = scriptPath.appending(path: "gui_backup.json")
-        let data = try Data(contentsOf: backupPath)
+        guard let backupURL = Bundle.main.url(
+                forResource: "gui_backup",
+                withExtension: "json"
+        ) else {
+            throw KHAccessError.fileError
+        }
+        let data = try Data(contentsOf: backupURL)
         return try JSONDecoder().decode(KHJSON.self, from: data)
     }
 
@@ -146,9 +156,13 @@ import SwiftUI
         // We can unfortunately not send this with --expert because the request is too
         // long.
         // TODO we can delete the file after running this function. What's
-        let filePath = scriptPath.appending(path: "gui_eq_settings.json")
-        try updatedData.writeToFile(filePath: filePath)
-        try await runKHToolProcess(args: ["--restore", filePath.path])
+        guard let eqBackupURL = Bundle.main.url(
+                forResource: "gui_eq_settings",
+                withExtension: "json") else {
+            throw KHAccessError.fileError
+        }
+        try updatedData.writeToFile(filePath: eqBackupURL)
+        try await runKHToolProcess(args: ["--restore", "\"" + eqBackupURL.path + "\""])
         sendingEqSettings = false
     }
 }
