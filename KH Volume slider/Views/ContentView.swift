@@ -8,41 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
-    private var scriptPath: URL
-    private var pythonPath: URL
-    private var khtoolPath: URL
-    private var networkInterface: String
-
-    @State private var volume: Double = 54
-    @State private var fetching: Bool = false
-    @State private var sendingEqSettings: Bool = false
-    @State private var speakersAvailable: Bool = false
-    @State private var eqs: [Eq] = [10, 20].map({numBands in
-        Eq(
-            boost: Array(repeating: 0.0, count: numBands),
-            enabled: Array(repeating: false, count: numBands),
-            frequency: Array(repeating: 100.0, count: numBands),
-            gain: Array(repeating: 0.0, count: numBands),
-            q: Array(repeating: 0.7, count: numBands),
-            type: Array(repeating: Eq.EqType.parametric.rawValue, count: numBands)
-        )
-    })
-    @State private var selectedEq: Int = 0
-    @State private var selectedEqBand: Int = 0
-    
-    init() {
-        // ####### SET THESE VARIABLES #######################################
-        self.scriptPath = URL.homeDirectory.appending(path: "code/kh_120")
-        self.pythonPath = self.scriptPath.appending(path: ".venv/bin/python")
-        self.khtoolPath = self.scriptPath.appending(path: "khtool/khtool.py")
-        self.networkInterface = "en0"
-        // ###################################################################
-    }
+    @State var khAccess = KHAccess()
+    @State var selectedEq: Int = 0
+    @State var selectedEqBand: Int = 0
+    // TODO set this somewhere
+    @State var fetching: Bool = false
+    @State var sendingEqSettings: Bool = false
 
     var body: some View {
         VStack {
             Text("Monitor volume")
-            Slider(value: $volume, in: 0...120, step: 6) {
+            Slider(value: $khAccess.volume, in: 0...120, step: 6) {
                 Text("")
             } minimumValueLabel: {
                 Text("0")
@@ -51,17 +27,19 @@ struct ContentView: View {
             } onEditingChanged: { editing in
                 if !editing {
                     Task {
-                        await sendVolumeToDevice()
+                        await khAccess.sendVolumeToDevice()
                     }
                 }
             }
             // We don't want to run this every time the window opens, only once. But how?
-            .disabled(!speakersAvailable)
+            .disabled(khAccess.speakersAvailable)
             .task {
-                await backupAndFetch()
+                fetching = true
+                await khAccess.backupAndFetch()
+                fetching = false
             }
             
-            Text("\(Int(volume)) dB")
+            Text("\(Int(khAccess.volume)) dB")
 
             Divider()
             
@@ -77,28 +55,28 @@ struct ContentView: View {
 
             HStack {
                 Picker("EQ Band:", selection: $selectedEqBand) {
-                    ForEach((1...eqs[selectedEq].boost.count), id: \.self) { i in
+                    ForEach((1...khAccess.eqs[selectedEq].boost.count), id: \.self) { i in
                         Text("\(i)").tag(i - 1)
                     }
                 }.frame(width: 120)
                 
-                Picker("Type:", selection: $eqs[selectedEq].type[selectedEqBand]) {
+                Picker("Type:", selection: $khAccess.eqs[selectedEq].type[selectedEqBand]) {
                     ForEach(Eq.EqType.allCases) { type in
                         Text(type.rawValue).tag(type.rawValue)
                     }
                 }.frame(width: 160)
                 
-                Toggle("Enabled", isOn: $eqs[selectedEq].enabled[selectedEqBand])
+                Toggle("Enabled", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand])
                 
                 Button(sendingEqSettings ? "Sending..." : "Send EQ settings") {
                     Task {
                         sendingEqSettings = true
-                        await sendEqToDevice()
+                        await khAccess.sendEqToDevice()
                         sendingEqSettings = false
                     }
                 }
                 .frame(height: 20)
-                .disabled(sendingEqSettings || !speakersAvailable)
+                .disabled(sendingEqSettings || !khAccess.speakersAvailable)
                 if sendingEqSettings {
                     ProgressView().scaleEffect(0.5).frame(height: 20)
                 }
@@ -106,25 +84,25 @@ struct ContentView: View {
             Grid(alignment: .topLeading) {
                 let sliders = [
                     EqSlider.SliderData(
-                        binding: $eqs[selectedEq].frequency,
+                        binding: $khAccess.eqs[selectedEq].frequency,
                         name: "Frequency",
                         unit: "Hz",
                         range: 10...24000
                     ),
                     EqSlider.SliderData(
-                        binding: $eqs[selectedEq].boost,
+                        binding: $khAccess.eqs[selectedEq].boost,
                         name: "Boost",
                         unit: "dB",
                         range: -99...24
                     ),
                     EqSlider.SliderData(
-                        binding: $eqs[selectedEq].q,
+                        binding: $khAccess.eqs[selectedEq].q,
                         name: "Q",
                         unit: nil,
                         range: 0.1...16
                     ),
                     EqSlider.SliderData(
-                        binding: $eqs[selectedEq].gain,
+                        binding: $khAccess.eqs[selectedEq].gain,
                         name: "Gain",
                         unit: "dB",
                         range: -99...24
@@ -148,11 +126,13 @@ struct ContentView: View {
             HStack {
                 Button(fetching ? "Fetching..." : "Fetch") {
                     Task {
-                        await backupAndFetch()
+                        fetching = true
+                        await khAccess.backupAndFetch()
+                        fetching = false
                     }
                 }
                 .frame(height: 20)
-                .disabled(fetching || !speakersAvailable)
+                .disabled(fetching || !khAccess.speakersAvailable)
                 if fetching {
                     ProgressView().scaleEffect(0.5).frame(height: 20)
                 }
@@ -165,129 +145,6 @@ struct ContentView: View {
         }
         .padding()
         .frame(width: 550)
-    }
-
-    func _runKHToolProcess(args: [String]) async -> Int {
-        let process = Process()
-        process.executableURL = URL(filePath: "/bin/sh")
-        process.currentDirectoryURL = scriptPath
-        var argString = ""
-        for arg in args {
-            argString += " " + arg
-        }
-        process.arguments = [
-          "-c",
-          "\(pythonPath.path) \(khtoolPath.path) -i \(networkInterface)" + argString
-        ]
-        do {
-            //print(process.terminationStatus)
-            try process.run()
-            process.waitUntilExit()
-            return Int(process.terminationStatus)
-        } catch {
-            // TODO print process output with pipe or something
-            print("Process failed.")
-            return -1
-        }
-    }
-    
-    func checkSpeakersAvailable() async {
-        if await _runKHToolProcess(args: ["-q"]) == 0 {
-            speakersAvailable = true
-        } else {
-            speakersAvailable = false
-        }
-    }
-    
-    func runKHToolProcess(args: [String]) async -> Int {
-        if await _runKHToolProcess(args: ["-q"]) != 0 {
-            return -1
-        }
-        return await _runKHToolProcess(args: args)
-    }
-
-    func backupDevice() async {
-        let backupPath = scriptPath.appending(path: "gui_backup.json")
-        await runKHToolProcess(args: ["--backup", backupPath.path])
-    }
-
-    func readBackupAsStruct() -> KHJSON? {
-        let backupPath = scriptPath.appending(path: "gui_backup.json")
-        guard let data = try? Data(contentsOf: backupPath) else {
-            return nil
-        }
-        return try? JSONDecoder().decode(KHJSON.self, from: data)
-    }
-
-    func readVolumeFromBackup() {
-        let json = readBackupAsStruct()
-        guard let new_volume = json?.devices.values.first?.commands.audio.out.level else {
-            print("fetching volume failed")
-            return
-        }
-        volume = new_volume
-    }
-
-    func readEqFromBackup() {
-        let json = readBackupAsStruct()
-        guard let out = json?.devices.values.first?.commands.audio.out else {
-            return
-        }
-        for (j, eq) in [out.eq2, out.eq3].enumerated() {
-            eqs[j] = eq
-        }
-    }
-
-    func backupAndFetch() async {
-        fetching = true
-        await backupDevice()
-        readVolumeFromBackup()
-        readEqFromBackup()
-        fetching = false
-    }
-
-    func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
-        var new_data = data
-        guard let out = new_data.devices.values.first?.commands.audio.out else {
-            print("updating KHJSON with eq failed")
-            return data
-        }
-        var new_data_eqs = [out.eq2, out.eq3]
-        for j in 0..<eqs.count {
-            new_data_eqs[j] = eqs[j]
-        }
-        for k in new_data.devices.keys {
-            new_data.devices[k]?.commands.audio.out.eq2 = new_data_eqs[0]
-            new_data.devices[k]?.commands.audio.out.eq3 = new_data_eqs[1]
-        }
-        return new_data
-    }
-
-    func sendVolumeToDevice() async {
-        await runKHToolProcess(args: ["--level", "\(Int(volume))"])
-    }
-
-    func sendEqToDevice() async {
-        guard let data = readBackupAsStruct() else {
-            print("Failed to read backup file")
-            return
-        }
-        var updatedData = updateKhjsonWithEq(data)
-        // set volume to nil manually. This lets us skip creating a backup, speeding up this
-        // operation considerably.
-        for k in updatedData.devices.keys {
-            updatedData.devices[k]?.commands.audio.out.level = nil
-        }
-        // We can unfortunately not send this with --expert because the request is too
-        // long.
-        // TODO we can delete the file after running this function. What's
-        let filePath = scriptPath.appending(path: "gui_eq_settings.json")
-        do {
-            try updatedData.writeToFile(filePath: filePath)
-        } catch {
-            print("Writing eq settings to file failed")
-        }
-        await runKHToolProcess(args: ["--restore", filePath.path])
     }
 }
 
