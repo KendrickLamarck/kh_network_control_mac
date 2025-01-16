@@ -15,7 +15,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             Text("Monitor volume")
-            Slider(value: $khAccess.volume, in: 0...120, step: 6) {
+            Slider(value: $khAccess.volume, in: 0...120, step: 3) {
                 Text("")
             } minimumValueLabel: {
                 Text("0")
@@ -28,9 +28,10 @@ struct ContentView: View {
                     }
                 }
             }
-            // We don't want to run this every time the window opens, only once. But how?
             .disabled(!khAccess.speakersAvailable)
+            // We don't want to run this every time the window opens, only once. But how?
             .task {
+                await khAccess.checkSpeakersAvailable()
                 try? await khAccess.backupAndFetch()
             }
             
@@ -54,7 +55,6 @@ struct ContentView: View {
                     }
                 }.frame(width: 120)
             }
-            
             EqBandPanel(
                 khAccess: khAccess,
                 selectedEq: selectedEq,

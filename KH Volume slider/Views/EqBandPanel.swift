@@ -71,16 +71,6 @@ struct EqBandPanel: View {
             }
             GridRow {
                 EqSlider(
-                    binding: $khAccess.eqs[selectedEq].boost,
-                    name: "Boost",
-                    unit: "dB",
-                    range: -99...24,
-                    logarithmic: false,
-                    selectedEqBand: selectedEqBand
-                )
-            }
-            GridRow {
-                EqSlider(
                     binding: $khAccess.eqs[selectedEq].q,
                     name: "Q",
                     unit: nil,
@@ -91,8 +81,18 @@ struct EqBandPanel: View {
             }
             GridRow {
                 EqSlider(
+                    binding: $khAccess.eqs[selectedEq].boost,
+                    name: "Boost",
+                    unit: "dB",
+                    range: -99...24,
+                    logarithmic: false,
+                    selectedEqBand: selectedEqBand
+                )
+            }
+            GridRow {
+                EqSlider(
                     binding: $khAccess.eqs[selectedEq].gain,
-                    name: "Gain",
+                    name: "Makeup",
                     unit: "dB",
                     range: -99...24,
                     logarithmic: false,

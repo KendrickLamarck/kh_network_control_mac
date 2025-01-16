@@ -1,0 +1,672 @@
+{
+    "devices": {
+        "2003:c1:df25:ba00:2a36:38ff:fe61:7506": {
+            "commands": {
+                "audio": {
+                    "in": {
+                        "interface": "DIGITAL DISCARDS ANALOG"
+                    },
+                    "in1": {
+                        "label": "DIGITAL AES3 INPUT CHANNEL A"
+                    },
+                    "in2": {
+                        "label": "DIGITAL AES3 INPUT CHANNEL B"
+                    },
+                    "out": {
+                        "delay": 0,
+                        "eq2": {
+                            "boost": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "desc": "post EQ",
+                            "enabled": [
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false
+                            ],
+                            "frequency": [
+                                100.0,
+                                220.0,
+                                400.0,
+                                40.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0
+                            ],
+                            "gain": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "q": [
+                                0.7,
+                                0.6,
+                                1.0,
+                                0.5,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7
+                            ],
+                            "type": [
+                                "HISHELF",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC"
+                            ]
+                        },
+                        "eq3": {
+                            "boost": [
+                                -6.0,
+                                -9.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "desc": "calibration EQ",
+                            "enabled": [
+                                true,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false
+                            ],
+                            "frequency": [
+                                43.0,
+                                125.0,
+                                3129.166,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0
+                            ],
+                            "gain": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "q": [
+                                3.0,
+                                3.6,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7
+                            ],
+                            "type": [
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "HIGHPASS",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC"
+                            ]
+                        },
+                        "level": 66.0,
+                        "mixer": {
+                            "inputs": [
+                                "../../in1",
+                                "../../in2"
+                            ],
+                            "levels": [
+                                -100.0,
+                                0.0
+                            ]
+                        },
+                        "mute": false,
+                        "phaseinversion": false,
+                        "solo": false
+                    }
+                },
+                "device": {
+                    "auth": {
+                        "exclusive": ""
+                    },
+                    "identification": {
+                        "visual": false,
+                        "visual_led": "SETUP"
+                    },
+                    "identity": {
+                        "product": "KH 120 II",
+                        "serial": "6294481452",
+                        "vendor": "Georg Neumann GmbH",
+                        "version": "1_1_11"
+                    },
+                    "name": "Right",
+                    "network": {
+                        "ether": {
+                            "macs": "28:36:38:61:75:06"
+                        }
+                    },
+                    "restore": "",
+                    "standby": {
+                        "auto_standby_time": 90,
+                        "countdown": 90,
+                        "enabled": true,
+                        "level": -65
+                    },
+                    "system": "",
+                    "time": 0,
+                    "timeprecision": 0,
+                    "update": {
+                        "enable": false,
+                        "startover": false
+                    }
+                },
+                "m": {
+                    "in": {
+                        "clip": [
+                            false,
+                            false
+                        ],
+                        "level": [
+                            -23.0,
+                            -25.2
+                        ]
+                    }
+                },
+                "osc": {
+                    "error": [
+                        {}
+                    ],
+                    "feature": {
+                        "baseaddr": false,
+                        "pattern": "*?",
+                        "subscription": true,
+                        "timetag": false
+                    },
+                    "ping": null,
+                    "state": {
+                        "auth": {
+                            "access": "default:/"
+                        },
+                        "prettyprint": false,
+                        "subscribe": [
+                            {}
+                        ],
+                        "subscribe_reserve": 50
+                    },
+                    "version": "1.1",
+                    "xid": null
+                },
+                "ui": {
+                    "bass_gain": "0",
+                    "control_mode": "NETWORK",
+                    "input_gain": -15.0,
+                    "input_select": "AES3 R",
+                    "logo": {
+                        "brightness": 75
+                    },
+                    "mid_gain": "0",
+                    "output_level": "94",
+                    "treble_gain": "0"
+                },
+                "warnings": [
+                    "NO_WARNING"
+                ]
+            },
+            "serial": "6294481452",
+            "product": "KH 120 II",
+            "vendor": "Georg Neumann GmbH",
+            "version": "1_1_11"
+        },
+        "2003:c1:df25:ba00:2a36:38ff:fe61:7933": {
+            "commands": {
+                "audio": {
+                    "in": {
+                        "interface": "DIGITAL DISCARDS ANALOG"
+                    },
+                    "in1": {
+                        "label": "DIGITAL AES3 INPUT CHANNEL A"
+                    },
+                    "in2": {
+                        "label": "DIGITAL AES3 INPUT CHANNEL B"
+                    },
+                    "out": {
+                        "delay": 0,
+                        "eq2": {
+                            "boost": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "desc": "post EQ",
+                            "enabled": [
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false
+                            ],
+                            "frequency": [
+                                100.0,
+                                220.0,
+                                400.0,
+                                40.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0
+                            ],
+                            "gain": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "q": [
+                                0.7,
+                                0.6,
+                                1.0,
+                                0.5,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7
+                            ],
+                            "type": [
+                                "HISHELF",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC"
+                            ]
+                        },
+                        "eq3": {
+                            "boost": [
+                                -6.0,
+                                -9.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "desc": "calibration EQ",
+                            "enabled": [
+                                true,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false
+                            ],
+                            "frequency": [
+                                43.0,
+                                125.0,
+                                3129.166,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0,
+                                100.0
+                            ],
+                            "gain": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "q": [
+                                3.0,
+                                3.6,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7,
+                                0.7
+                            ],
+                            "type": [
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "HIGHPASS",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC",
+                                "PARAMETRIC"
+                            ]
+                        },
+                        "level": 66.0,
+                        "mixer": {
+                            "inputs": [
+                                "../../in1",
+                                "../../in2"
+                            ],
+                            "levels": [
+                                0.0,
+                                -100.0
+                            ]
+                        },
+                        "mute": false,
+                        "phaseinversion": false,
+                        "solo": false
+                    }
+                },
+                "device": {
+                    "auth": {
+                        "exclusive": ""
+                    },
+                    "identification": {
+                        "visual": false,
+                        "visual_led": "SETUP"
+                    },
+                    "identity": {
+                        "product": "KH 120 II",
+                        "serial": "6434485698",
+                        "vendor": "Georg Neumann GmbH",
+                        "version": "1_1_11"
+                    },
+                    "name": "Left",
+                    "network": {
+                        "ether": {
+                            "macs": "28:36:38:61:79:33"
+                        }
+                    },
+                    "restore": "",
+                    "standby": {
+                        "auto_standby_time": 90,
+                        "countdown": 90,
+                        "enabled": true,
+                        "level": -65
+                    },
+                    "system": "",
+                    "time": 0,
+                    "timeprecision": 0,
+                    "update": {
+                        "enable": false,
+                        "startover": false
+                    }
+                },
+                "m": {
+                    "in": {
+                        "clip": [
+                            false,
+                            false
+                        ],
+                        "level": [
+                            -29.0,
+                            -30.0
+                        ]
+                    }
+                },
+                "osc": {
+                    "error": [
+                        {}
+                    ],
+                    "feature": {
+                        "baseaddr": false,
+                        "pattern": "*?",
+                        "subscription": true,
+                        "timetag": false
+                    },
+                    "ping": null,
+                    "state": {
+                        "auth": {
+                            "access": "default:/"
+                        },
+                        "prettyprint": false,
+                        "subscribe": [
+                            {}
+                        ],
+                        "subscribe_reserve": 50
+                    },
+                    "version": "1.1",
+                    "xid": null
+                },
+                "ui": {
+                    "bass_gain": "0",
+                    "control_mode": "NETWORK",
+                    "input_gain": -15.0,
+                    "input_select": "AES3 L",
+                    "logo": {
+                        "brightness": 75
+                    },
+                    "mid_gain": "0",
+                    "output_level": "94",
+                    "treble_gain": "0"
+                },
+                "warnings": [
+                    "NO_WARNING"
+                ]
+            },
+            "serial": "6434485698",
+            "product": "KH 120 II",
+            "vendor": "Georg Neumann GmbH",
+            "version": "1_1_11"
+        }
+    },
+    "timestamp": 1737068793,
+    "timelocal": "Fri Jan 17 00:06:33 2025",
+    "version": "0.192",
+    "comment": ""
+}

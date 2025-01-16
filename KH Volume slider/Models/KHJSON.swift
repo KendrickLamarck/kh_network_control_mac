@@ -15,8 +15,6 @@ struct Eq: Codable {
     var q: [Double]
     var type: [String]
     
-    // Don't think this works?
-    // Hold up it might
     init(numBands: Int) {
         boost = Array(repeating: 0.0, count: numBands)
         enabled = Array(repeating: false, count: numBands)

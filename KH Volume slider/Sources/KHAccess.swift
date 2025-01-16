@@ -16,9 +16,10 @@ import SwiftUI
     private var khtoolPath: URL
     private var networkInterface: String
 
-    var speakersAvailable: Bool = false
+    var speakersAvailable: Bool = true
     var volume: Double = 54
     var eqs: [Eq] = [Eq(numBands: 10), Eq(numBands: 20)]
+
     var fetching: Bool = false
     var sendingEqSettings: Bool = false
 
@@ -71,7 +72,6 @@ import SwiftUI
     }
 
     func runKHToolProcess(args: [String]) async throws {
-        await checkSpeakersAvailable()
         if !speakersAvailable {
             throw KHAccessError.speakersNotReachable
         }
