@@ -16,8 +16,8 @@ import SwiftUI
     private var khtoolPath: URL
     private var networkInterface: String
 
-    var volume: Double = 54
     var speakersAvailable: Bool = false
+    var volume: Double = 54
     var eqs: [Eq] = [10, 20].map({numBands in
         Eq(
             boost: Array(repeating: 0.0, count: numBands),

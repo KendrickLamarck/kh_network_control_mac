@@ -16,13 +16,24 @@ struct KH_Volume_sliderTests {
 
     @Test func testVolume() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        let app = await ContentView()
-        await app.sendVolumeToDevice()
-        await app.readVolumeFromBackup()
+        let khAccess = KHAccess()
+        await khAccess.sendVolumeToDevice()
+        khAccess.readVolumeFromBackup()
+    }
+    
+    @Test func testReadFromBackup() async throws {
+        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+        let khAccess = KHAccess()
+        khAccess.readVolumeFromBackup()
+        #expect(khAccess.volume == 54)
+        khAccess.readEqFromBackup()
+        #expect(khAccess.eqs[1].frequency[0] == 43)
     }
 
+
     @Test func testPythonReachable() async throws {
-        let app = await ContentView()
-        #expect(await app.runKHToolProcess(args: ["-v"]) == 0)
+        let khAccess = KHAccess()
+        let exitCode = await khAccess._runKHToolProcess(args: ["-v"])
+        #expect(exitCode == 0)
     }
 }
