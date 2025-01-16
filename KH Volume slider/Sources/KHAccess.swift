@@ -19,6 +19,8 @@ import SwiftUI
     var speakersAvailable: Bool = false
     var volume: Double = 54
     var eqs: [Eq] = [Eq(numBands: 10), Eq(numBands: 20)]
+    var fetching: Bool = false
+    var sendingEqSettings: Bool = false
 
     init() {
         // ####### SET THESE VARIABLES #######################################
@@ -105,9 +107,11 @@ import SwiftUI
     }
 
     func backupAndFetch() async throws {
+        fetching = true
         try await backupDevice()
         try readVolumeFromBackup()
         try readEqFromBackup()
+        fetching = false
     }
 
     func updateKhjsonWithEq(_ data: KHJSON) throws -> KHJSON {
@@ -131,6 +135,7 @@ import SwiftUI
     }
 
     func sendEqToDevice() async throws {
+        sendingEqSettings = true
         let data = try readBackupAsStruct()
         var updatedData = try updateKhjsonWithEq(data)
         // set volume to nil manually. This lets us skip creating a backup, speeding up this
@@ -144,5 +149,6 @@ import SwiftUI
         let filePath = scriptPath.appending(path: "gui_eq_settings.json")
         try updatedData.writeToFile(filePath: filePath)
         try await runKHToolProcess(args: ["--restore", filePath.path])
+        sendingEqSettings = false
     }
 }

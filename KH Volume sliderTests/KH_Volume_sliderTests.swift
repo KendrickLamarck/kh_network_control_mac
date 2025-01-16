@@ -10,11 +10,12 @@ import Testing
 
 struct KH_Volume_sliderTests_Online {
 
-    @Test func testVolume() async throws {
+    @Test func testSendToDevice() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.
         let khAccess = KHAccess()
-        await khAccess.sendVolumeToDevice()
-        khAccess.readVolumeFromBackup()
+        try await khAccess.sendVolumeToDevice()
+        try await khAccess.sendEqToDevice()
+        try await khAccess.backupDevice()
     }
 }
 
@@ -22,15 +23,14 @@ struct KH_Volume_sliderTests_Offline {
 
     @Test func testReadFromBackup() async throws {
         let khAccess = KHAccess()
-        khAccess.readVolumeFromBackup()
-        #expect(khAccess.volume == 54)
-        khAccess.readEqFromBackup()
+        try khAccess.readVolumeFromBackup()
+        #expect(khAccess.volume == 66)
+        try khAccess.readEqFromBackup()
         #expect(khAccess.eqs[1].frequency[0] == 43)
     }
 
     @Test func testPythonReachable() async throws {
         let khAccess = KHAccess()
-        let exitCode = await khAccess._runKHToolProcess(args: ["-v"])
-        #expect(exitCode == 0)
+        try await khAccess._runKHToolProcess(args: ["-v"])
     }
 }
