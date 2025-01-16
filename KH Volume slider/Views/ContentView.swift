@@ -13,16 +13,17 @@ struct ContentView: View {
     private var khtoolPath: URL
     private var networkInterface: String
 
-    @State internal var volume: Double = 54
+    @State private var volume: Double = 54
     @State private var fetching: Bool = false
     @State private var sendingEqSettings: Bool = false
+    @State private var speakersAvailable: Bool = false
     @State private var eqs: [Eq] = [10, 20].map({numBands in
         Eq(
             boost: Array(repeating: 0.0, count: numBands),
             enabled: Array(repeating: false, count: numBands),
             frequency: Array(repeating: 100.0, count: numBands),
             gain: Array(repeating: 0.0, count: numBands),
-            q: Array(repeating: 0.71, count: numBands),
+            q: Array(repeating: 0.7, count: numBands),
             type: Array(repeating: Eq.EqType.parametric.rawValue, count: numBands)
         )
     })
@@ -55,11 +56,13 @@ struct ContentView: View {
                 }
             }
             // We don't want to run this every time the window opens, only once. But how?
+            .disabled(!speakersAvailable)
             .task {
                 await backupAndFetch()
             }
+            
             Text("\(Int(volume)) dB")
-                        
+
             Divider()
             
             Picker("EQ:", selection: $selectedEq) {
@@ -95,13 +98,13 @@ struct ContentView: View {
                     }
                 }
                 .frame(height: 20)
-                .disabled(sendingEqSettings)
+                .disabled(sendingEqSettings || !speakersAvailable)
                 if sendingEqSettings {
                     ProgressView().scaleEffect(0.5).frame(height: 20)
                 }
             }
             Grid(alignment: .topLeading) {
-                let sliders: [EqSlider.SliderData] = [
+                let sliders = [
                     EqSlider.SliderData(
                         binding: $eqs[selectedEq].frequency,
                         name: "Frequency",
@@ -149,7 +152,7 @@ struct ContentView: View {
                     }
                 }
                 .frame(height: 20)
-                .disabled(fetching)
+                .disabled(fetching || !speakersAvailable)
                 if fetching {
                     ProgressView().scaleEffect(0.5).frame(height: 20)
                 }
@@ -163,8 +166,8 @@ struct ContentView: View {
         .padding()
         .frame(width: 550)
     }
-    
-    func runKHToolProcess(args: [String]) async {
+
+    func _runKHToolProcess(args: [String]) async -> Int {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
         process.currentDirectoryURL = scriptPath
@@ -177,12 +180,30 @@ struct ContentView: View {
           "\(pythonPath.path) \(khtoolPath.path) -i \(networkInterface)" + argString
         ]
         do {
+            //print(process.terminationStatus)
             try process.run()
             process.waitUntilExit()
+            return Int(process.terminationStatus)
         } catch {
             // TODO print process output with pipe or something
             print("Process failed.")
+            return -1
         }
+    }
+    
+    func checkSpeakersAvailable() async {
+        if await _runKHToolProcess(args: ["-q"]) == 0 {
+            speakersAvailable = true
+        } else {
+            speakersAvailable = false
+        }
+    }
+    
+    func runKHToolProcess(args: [String]) async -> Int {
+        if await _runKHToolProcess(args: ["-q"]) != 0 {
+            return -1
+        }
+        return await _runKHToolProcess(args: args)
     }
 
     func backupDevice() async {
@@ -206,7 +227,7 @@ struct ContentView: View {
         }
         volume = new_volume
     }
-    
+
     func readEqFromBackup() {
         let json = readBackupAsStruct()
         guard let out = json?.devices.values.first?.commands.audio.out else {
@@ -216,7 +237,7 @@ struct ContentView: View {
             eqs[j] = eq
         }
     }
-    
+
     func backupAndFetch() async {
         fetching = true
         await backupDevice()
@@ -224,7 +245,7 @@ struct ContentView: View {
         readEqFromBackup()
         fetching = false
     }
-        
+
     func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
         var new_data = data
         guard let out = new_data.devices.values.first?.commands.audio.out else {
@@ -241,7 +262,7 @@ struct ContentView: View {
         }
         return new_data
     }
-    
+
     func sendVolumeToDevice() async {
         await runKHToolProcess(args: ["--level", "\(Int(volume))"])
     }

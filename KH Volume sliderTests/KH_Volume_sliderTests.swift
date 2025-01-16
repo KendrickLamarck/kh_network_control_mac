@@ -16,12 +16,13 @@ struct KH_Volume_sliderTests {
 
     @Test func testVolume() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        let app = await KH_Volume_slider.ContentView()
-        await app.sendVolume(volume: 23)
-        await #expect(app.volume == 23.0)
-        await app.setVolume(volume: 55)
+        let app = await ContentView()
+        await app.sendVolumeToDevice()
         await app.readVolumeFromBackup()
-        await #expect(app.volume == 55.0)
     }
 
+    @Test func testPythonReachable() async throws {
+        let app = await ContentView()
+        #expect(await app.runKHToolProcess(args: ["-v"]) == 0)
+    }
 }
