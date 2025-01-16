@@ -11,7 +11,6 @@ struct ContentView: View {
     @State var khAccess = KHAccess()
     @State var selectedEq: Int = 0
     @State var selectedEqBand: Int = 0
-    // TODO set this somewhere
     @State var fetching: Bool = false
     @State var sendingEqSettings: Bool = false
 
@@ -27,15 +26,15 @@ struct ContentView: View {
             } onEditingChanged: { editing in
                 if !editing {
                     Task {
-                        await khAccess.sendVolumeToDevice()
+                        try await khAccess.sendVolumeToDevice()
                     }
                 }
             }
             // We don't want to run this every time the window opens, only once. But how?
-            .disabled(khAccess.speakersAvailable)
+            .disabled(!khAccess.speakersAvailable)
             .task {
                 fetching = true
-                await khAccess.backupAndFetch()
+                try? await khAccess.backupAndFetch()
                 fetching = false
             }
             
@@ -71,7 +70,7 @@ struct ContentView: View {
                 Button(sendingEqSettings ? "Sending..." : "Send EQ settings") {
                     Task {
                         sendingEqSettings = true
-                        await khAccess.sendEqToDevice()
+                        try await khAccess.sendEqToDevice()
                         sendingEqSettings = false
                     }
                 }
@@ -127,7 +126,7 @@ struct ContentView: View {
                 Button(fetching ? "Fetching..." : "Fetch") {
                     Task {
                         fetching = true
-                        await khAccess.backupAndFetch()
+                        try await khAccess.backupAndFetch()
                         fetching = false
                     }
                 }

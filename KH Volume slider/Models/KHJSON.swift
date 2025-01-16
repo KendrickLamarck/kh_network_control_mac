@@ -44,6 +44,9 @@ struct Eq: Codable {
 }
 
 struct KHJSON: Codable {
+    /*
+     struct mirroring the structure of backup.json created by khtool.
+     */
     var devices: [String: Device]
  
     struct Device: Codable {

@@ -9,7 +9,7 @@ import SwiftUI
 
 @Observable class KHAccess {
     /*
-     Fetches, sends and stores data from KH speakers.
+     Fetches, sends and stores data from speakers.
      */
     private var scriptPath: URL
     private var pythonPath: URL
@@ -32,13 +32,15 @@ import SwiftUI
         // ###################################################################
     }
     
+    // TODO use these
     enum KHAccessError: Error {
         case processError
         case speakersNotReachable
         case fileError
+        case jsonError
     }
     
-    func _runKHToolProcess(args: [String]) async -> Int {
+    func _runKHToolProcess(args: [String]) async throws {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
         process.currentDirectoryURL = scriptPath
@@ -47,79 +49,71 @@ import SwiftUI
             argString += " " + arg
         }
         process.arguments = [
-          "-c",
-          "\(pythonPath.path) \(khtoolPath.path) -i \(networkInterface)" + argString
+            "-c",
+            "\(pythonPath.path) \(khtoolPath.path) -i \(networkInterface)" + argString
         ]
-        do {
-            //print(process.terminationStatus)
-            try process.run()
-            process.waitUntilExit()
-            return Int(process.terminationStatus)
-        } catch {
-            // TODO print process output with pipe or something
-            print("Process failed.")
-            return -1
+        try process.run()
+        process.waitUntilExit()
+        if process.terminationStatus != 0 {
+            throw KHAccessError.processError
         }
     }
 
     func checkSpeakersAvailable() async {
-        if await _runKHToolProcess(args: ["-q"]) == 0 {
+        do {
+            try await _runKHToolProcess(args: ["-q"])
             speakersAvailable = true
-        } else {
+        } catch {
             speakersAvailable = false
         }
     }
 
-    func runKHToolProcess(args: [String]) async -> Int {
-        if await _runKHToolProcess(args: ["-q"]) != 0 {
-            return -1
+    func runKHToolProcess(args: [String]) async throws {
+        await checkSpeakersAvailable()
+        if !speakersAvailable {
+            throw KHAccessError.speakersNotReachable
         }
-        return await _runKHToolProcess(args: args)
+        return try await _runKHToolProcess(args: args)
     }
 
-    func backupDevice() async {
+    func backupDevice() async throws {
         let backupPath = scriptPath.appending(path: "gui_backup.json")
-        await _ = runKHToolProcess(args: ["--backup", backupPath.path])
+        try await runKHToolProcess(args: ["--backup", backupPath.path])
     }
 
-    func readBackupAsStruct() -> KHJSON? {
+    func readBackupAsStruct() throws -> KHJSON {
         let backupPath = scriptPath.appending(path: "gui_backup.json")
-        guard let data = try? Data(contentsOf: backupPath) else {
-            return nil
-        }
-        return try? JSONDecoder().decode(KHJSON.self, from: data)
+        let data = try Data(contentsOf: backupPath)
+        return try JSONDecoder().decode(KHJSON.self, from: data)
     }
 
-    func readVolumeFromBackup() {
-        let json = readBackupAsStruct()
-        guard let new_volume = json?.devices.values.first?.commands.audio.out.level else {
-            print("fetching volume failed")
-            return
+    func readVolumeFromBackup() throws {
+        let json = try readBackupAsStruct()
+        guard let new_volume = json.devices.values.first?.commands.audio.out.level else {
+            throw KHAccessError.jsonError
         }
         volume = new_volume
     }
 
-    func readEqFromBackup() {
-        let json = readBackupAsStruct()
-        guard let out = json?.devices.values.first?.commands.audio.out else {
-            return
+    func readEqFromBackup() throws {
+        let json = try readBackupAsStruct()
+        guard let out = json.devices.values.first?.commands.audio.out else {
+            throw KHAccessError.jsonError
         }
-        for (j, eq) in [out.eq2, out.eq3].enumerated() {
-            eqs[j] = eq
-        }
+        eqs[0] = out.eq2
+        eqs[1] = out.eq3
     }
 
-    func backupAndFetch() async {
-        await backupDevice()
-        readVolumeFromBackup()
-        readEqFromBackup()
+    func backupAndFetch() async throws {
+        try await backupDevice()
+        try readVolumeFromBackup()
+        try readEqFromBackup()
     }
 
-    func updateKhjsonWithEq(_ data: KHJSON) -> KHJSON {
+    func updateKhjsonWithEq(_ data: KHJSON) throws -> KHJSON {
         var new_data = data
         guard let out = new_data.devices.values.first?.commands.audio.out else {
-            print("updating KHJSON with eq failed")
-            return data
+            throw KHAccessError.jsonError
         }
         var new_data_eqs = [out.eq2, out.eq3]
         for j in 0..<eqs.count {
@@ -132,16 +126,13 @@ import SwiftUI
         return new_data
     }
 
-    func sendVolumeToDevice() async {
-        await _ = runKHToolProcess(args: ["--level", "\(Int(volume))"])
+    func sendVolumeToDevice() async throws {
+        try await runKHToolProcess(args: ["--level", "\(Int(volume))"])
     }
 
-    func sendEqToDevice() async {
-        guard let data = readBackupAsStruct() else {
-            print("Failed to read backup file")
-            return
-        }
-        var updatedData = updateKhjsonWithEq(data)
+    func sendEqToDevice() async throws {
+        let data = try readBackupAsStruct()
+        var updatedData = try updateKhjsonWithEq(data)
         // set volume to nil manually. This lets us skip creating a backup, speeding up this
         // operation considerably.
         for k in updatedData.devices.keys {
@@ -151,11 +142,7 @@ import SwiftUI
         // long.
         // TODO we can delete the file after running this function. What's
         let filePath = scriptPath.appending(path: "gui_eq_settings.json")
-        do {
-            try updatedData.writeToFile(filePath: filePath)
-        } catch {
-            print("Writing eq settings to file failed")
-        }
-        await _ = runKHToolProcess(args: ["--restore", filePath.path])
+        try updatedData.writeToFile(filePath: filePath)
+        try await runKHToolProcess(args: ["--restore", filePath.path])
     }
 }
