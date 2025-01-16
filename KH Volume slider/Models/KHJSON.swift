@@ -16,7 +16,7 @@ struct Eq: Codable {
     var type: [String]
     
     // Don't think this works?
-    /*
+    // Hold up it might
     init(numBands: Int) {
         boost = Array(repeating: 0.0, count: numBands)
         enabled = Array(repeating: false, count: numBands)
@@ -25,7 +25,6 @@ struct Eq: Codable {
         q = Array(repeating: 0.7, count: numBands)
         type = Array(repeating: Eq.EqType.parametric.rawValue, count: numBands)
     }
-     */
 
     enum EqType: String, CaseIterable, Identifiable {
         case parametric = "PARAMETRIC"

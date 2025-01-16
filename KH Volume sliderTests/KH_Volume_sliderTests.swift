@@ -8,11 +8,7 @@
 import Testing
 @testable import KH_Volume_slider
 
-struct KH_Volume_sliderTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-    }
+struct KH_Volume_sliderTests_Online {
 
     @Test func testVolume() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.
@@ -20,16 +16,17 @@ struct KH_Volume_sliderTests {
         await khAccess.sendVolumeToDevice()
         khAccess.readVolumeFromBackup()
     }
-    
+}
+
+struct KH_Volume_sliderTests_Offline {
+
     @Test func testReadFromBackup() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
         let khAccess = KHAccess()
         khAccess.readVolumeFromBackup()
         #expect(khAccess.volume == 54)
         khAccess.readEqFromBackup()
         #expect(khAccess.eqs[1].frequency[0] == 43)
     }
-
 
     @Test func testPythonReachable() async throws {
         let khAccess = KHAccess()

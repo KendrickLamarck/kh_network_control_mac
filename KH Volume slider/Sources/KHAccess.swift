@@ -18,16 +18,7 @@ import SwiftUI
 
     var speakersAvailable: Bool = false
     var volume: Double = 54
-    var eqs: [Eq] = [10, 20].map({numBands in
-        Eq(
-            boost: Array(repeating: 0.0, count: numBands),
-            enabled: Array(repeating: false, count: numBands),
-            frequency: Array(repeating: 100.0, count: numBands),
-            gain: Array(repeating: 0.0, count: numBands),
-            q: Array(repeating: 0.7, count: numBands),
-            type: Array(repeating: Eq.EqType.parametric.rawValue, count: numBands)
-        )
-    })
+    var eqs: [Eq] = [Eq(numBands: 10), Eq(numBands: 20)]
 
     init() {
         // ####### SET THESE VARIABLES #######################################
@@ -70,7 +61,7 @@ import SwiftUI
             return -1
         }
     }
-    
+
     func checkSpeakersAvailable() async {
         if await _runKHToolProcess(args: ["-q"]) == 0 {
             speakersAvailable = true
@@ -78,7 +69,7 @@ import SwiftUI
             speakersAvailable = false
         }
     }
-    
+
     func runKHToolProcess(args: [String]) async -> Int {
         if await _runKHToolProcess(args: ["-q"]) != 0 {
             return -1
