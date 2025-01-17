@@ -11,14 +11,13 @@ Prerequisites:
 * Install Xcode
 * Make sure you have python3
 
-**Note:** You can use a different main path (for auxiliary files), python executable and khtoolPath, but if you do, you have to change the variables in `init()` in `KH Volume slider/ContentView.swift`.
+**Note:** You can use a different python executable path, but if you do, you have to change the variable `pythonPath` in `KH Volume slider/Sources/KHAccess.swift`.
 
-Create a directory in your home directory. The default is `~/code/kh_120`. Clone the dependencies into this directory:
+Create a directory in your home directory. The default is `~/code/kh_120`. Clone the project into this directory:
 
 ``` sh
 mkdir -p ~/code/kh_120
 cd ~/code/kh_120
-git clone git@github.com:schwinn/khtool.git
 git clone git@github.com:KendrickLamarck/kh_network_control_mac.git
 ```
 
@@ -36,6 +35,6 @@ Make sure the network interface assumed by the GUI is correct:
 python khtool/khtool.py -i en0 -q
 ```
 
-This command should produce a bunch of output. If not, you need to find out the correct interface name and change it in `init()` in `KH Volume slider/ContentView.swift`.
+This command should produce some output. If not, you need to find out the correct interface name and change the `networkInterface` variable in `KH Volume slider/Sources/KHAccess.swift`.
 
 Now open `KH Volume slider.xcodeproj` in Xcode, build and run the app. At this point we probably get stuck because of code signage/ownership issues or something.
