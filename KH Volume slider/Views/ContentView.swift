@@ -28,10 +28,12 @@ struct ContentView: View {
                     }
                 }
             }
-            .disabled(!khAccess.speakersAvailable)
+            .disabled(khAccess.status == .speakersUnavailable)
             // We don't want to run this every time the window opens, only once. But how?
             .task {
-                await khAccess.checkSpeakersAvailable()
+                guard (try? await khAccess.checkSpeakersAvailable()) != nil else {
+                    return
+                }
                 try? await khAccess.backupAndFetch()
             }
             
@@ -65,20 +67,17 @@ struct ContentView: View {
             Divider()
 
             HStack {
-                Button(khAccess.fetching ? "Fetching..." : "Fetch") {
+                Button("Fetch") {
                     Task {
                         try await khAccess.backupAndFetch()
                     }
                 }
-                .frame(height: 20)
-                .disabled(khAccess.fetching || !khAccess.speakersAvailable)
-                if khAccess.fetching {
-                    ProgressView().scaleEffect(0.5).frame(height: 20)
-                }
+                .disabled(khAccess.status == .fetching || khAccess.status == .speakersUnavailable)
 
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
+                StatusDisplay(status: khAccess.status)
             }
             
         }

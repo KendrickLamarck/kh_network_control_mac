@@ -11,30 +11,30 @@ import SwiftUI
     /*
      Fetches, sends and stores data from speakers.
      */
-    private var scriptPath: URL
-    private var pythonPath: URL
-    private var khtoolPath: URL
-    private var networkInterface: String
-
-    var speakersAvailable: Bool = true
-    var volume: Double = 54
-    var eqs: [Eq] = [Eq(numBands: 10), Eq(numBands: 20)]
-
-    var fetching: Bool = false
-    var sendingEqSettings: Bool = false
-
-    init() {
-        // ####### SET THESE VARIABLES #######################################
-        let scriptPath = URL.homeDirectory.appending(path: "code/kh_120")
-        let pythonPath = scriptPath.appending(path: ".venv/bin/python")
-        let khtoolPath = scriptPath.appending(path: "khtool/khtool.py")
-        self.scriptPath = scriptPath
-        self.pythonPath = pythonPath
-        self.khtoolPath = khtoolPath
-        self.networkInterface = "en0"
-        // ###################################################################
-    }
     
+    // ######################## CHANGE THIS TO YOUR PYTHON ############################
+    private var pythonPath = URL.homeDirectory.appending(
+        path: "code/kh_120/.venv/bin/python"
+    )
+    // ################################################################################
+
+    private var khtoolPath = Bundle.main.url(
+        forResource: "khtool", withExtension: "py"
+    )!
+    private var networkInterface = "en0"
+
+    var volume = 54.0
+    var eqs = [Eq(numBands: 10), Eq(numBands: 20)]
+
+    var status: Status = .clean
+    
+    enum Status {
+        case clean
+        case fetching
+        case sendingEqSettings
+        case speakersUnavailable
+    }
+
     // TODO use these
     enum KHAccessError: Error {
         case processError
@@ -42,18 +42,19 @@ import SwiftUI
         case fileError
         case jsonError
     }
-    
+
     func _runKHToolProcess(args: [String]) async throws {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
-        process.currentDirectoryURL = scriptPath
+        process.currentDirectoryURL = Bundle.main.resourceURL!
         var argString = ""
         for arg in args {
             argString += " " + arg
         }
         process.arguments = [
             "-c",
-            "\(pythonPath.path) \(khtoolPath.path) -i \(networkInterface)" + argString
+            "\(pythonPath.path) \"\(khtoolPath.path)\" -i \(networkInterface)"
+                + argString
         ]
         try process.run()
         process.waitUntilExit()
@@ -62,39 +63,32 @@ import SwiftUI
         }
     }
 
-    func checkSpeakersAvailable() async {
+    func checkSpeakersAvailable() async throws {
         do {
             try await _runKHToolProcess(args: ["-q"])
-            speakersAvailable = true
+            status = .clean
         } catch {
-            speakersAvailable = false
+            status = .speakersUnavailable
+            throw KHAccessError.speakersNotReachable
         }
     }
 
     func runKHToolProcess(args: [String]) async throws {
-        if !speakersAvailable {
+        if status == .speakersUnavailable {
             throw KHAccessError.speakersNotReachable
         }
         return try await _runKHToolProcess(args: args)
     }
 
     func backupDevice() async throws {
-        guard let backupPath = Bundle.main.path(
-                forResource: "gui_backup",
-                ofType: "json"
-        ) else {
-            throw KHAccessError.fileError
-        }
+        let backupPath = Bundle.main.path(forResource: "gui_backup", ofType: "json")!
         try await runKHToolProcess(args: ["--backup", "\"" + backupPath + "\""])
     }
 
     func readBackupAsStruct() throws -> KHJSON {
-        guard let backupURL = Bundle.main.url(
-                forResource: "gui_backup",
-                withExtension: "json"
-        ) else {
-            throw KHAccessError.fileError
-        }
+        let backupURL = Bundle.main.url(
+            forResource: "gui_backup", withExtension: "json"
+        )!
         let data = try Data(contentsOf: backupURL)
         return try JSONDecoder().decode(KHJSON.self, from: data)
     }
@@ -117,11 +111,11 @@ import SwiftUI
     }
 
     func backupAndFetch() async throws {
-        fetching = true
+        status = .fetching
         try await backupDevice()
         try readVolumeFromBackup()
         try readEqFromBackup()
-        fetching = false
+        status = .clean
     }
 
     func updateKhjsonWithEq(_ data: KHJSON) throws -> KHJSON {
@@ -145,7 +139,7 @@ import SwiftUI
     }
 
     func sendEqToDevice() async throws {
-        sendingEqSettings = true
+        status = .sendingEqSettings
         let data = try readBackupAsStruct()
         var updatedData = try updateKhjsonWithEq(data)
         // set volume to nil manually. This lets us skip creating a backup, speeding up this
@@ -156,13 +150,11 @@ import SwiftUI
         // We can unfortunately not send this with --expert because the request is too
         // long.
         // TODO we can delete the file after running this function. What's
-        guard let eqBackupURL = Bundle.main.url(
-                forResource: "gui_eq_settings",
-                withExtension: "json") else {
-            throw KHAccessError.fileError
-        }
+        let eqBackupURL = Bundle.main.url(
+            forResource: "gui_eq_settings", withExtension: "json"
+        )!
         try updatedData.writeToFile(filePath: eqBackupURL)
         try await runKHToolProcess(args: ["--restore", "\"" + eqBackupURL.path + "\""])
-        sendingEqSettings = false
+        status = .clean
     }
 }

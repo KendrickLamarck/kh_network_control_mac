@@ -47,16 +47,12 @@ struct EqBandPanel: View {
             
             Toggle("Enabled", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand])
             
-            Button(khAccess.sendingEqSettings ? "Sending..." : "Send EQ settings") {
+            Button("Send EQ settings") {
                 Task {
                     try await khAccess.sendEqToDevice()
                 }
             }
-            .frame(height: 20)
-            .disabled(khAccess.sendingEqSettings || !khAccess.speakersAvailable)
-            if khAccess.sendingEqSettings {
-                ProgressView().scaleEffect(0.5).frame(height: 20)
-            }
+            .disabled(khAccess.status == .sendingEqSettings || khAccess.status == .speakersUnavailable)
         }
         Grid(alignment: .topLeading) {
             GridRow {
