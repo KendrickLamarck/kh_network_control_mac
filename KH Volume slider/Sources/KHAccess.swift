@@ -32,6 +32,7 @@ import SwiftUI
         case clean
         case fetching
         case sendingEqSettings
+        case checkingSpeakerAvailability
         case speakersUnavailable
     }
 
@@ -64,6 +65,7 @@ import SwiftUI
     }
 
     func checkSpeakersAvailable() async throws {
+        status = .checkingSpeakerAvailability
         do {
             try await _runKHToolProcess(args: ["-q"])
             status = .clean

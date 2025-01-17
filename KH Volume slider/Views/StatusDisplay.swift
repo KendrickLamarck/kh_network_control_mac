@@ -20,6 +20,9 @@ struct StatusDisplay: View {
                 .background(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(lineWidth: 2).foregroundColor(.red))
+        case .checkingSpeakerAvailability:
+            Text("Checking speaker availability...")
+            ProgressView().scaleEffect(0.5).frame(height: 20)
         case .sendingEqSettings:
             Text("Sending EQ settings...")
             ProgressView().scaleEffect(0.5).frame(height: 20)
