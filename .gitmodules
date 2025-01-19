@@ -2,6 +2,10 @@
 	path = khtool
 	url = git@github.com:KendrickLamarck/khtool.git
 	branch = query-available-commands
-[submodule "pyssc"]
-	path = pyssc
+[submodule "KH Volume slider/Resources/khtool"]
+	path = KH Volume slider/Resources/khtool
+	url = git@github.com:KendrickLamarck/khtool.git
+	branch = query-available-commands
+[submodule "KH Volume slider/Resources/pyssc"]
+	path = KH Volume slider/Resources/pyssc
 	url = git@github.com:schwinn/pyssc.git

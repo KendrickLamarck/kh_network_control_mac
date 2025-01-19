@@ -6,37 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		C5EAAE632D3D866E006C06CE /* khtool.py in Resources */ = {isa = PBXBuildFile; fileRef = C5EAAE622D3D866E006C06CE /* khtool.py */; };
-/* End PBXBuildFile section */
-
-/* Begin PBXBuildRule section */
-		C525FE412D3AB50C0057ACF6 /* PBXBuildRule */ = {
-			isa = PBXBuildRule;
-			compilerSpec = com.apple.compilers.proxy.script;
-			fileType = sourcecode.rez;
-			inputFiles = (
-			);
-			isEditable = 1;
-			outputFiles = (
-			);
-			script = "# 
-";
-		};
-		C525FE422D3AB5170057ACF6 /* PBXBuildRule */ = {
-			isa = PBXBuildRule;
-			compilerSpec = com.apple.compilers.proxy.script;
-			fileType = sourcecode.rez;
-			inputFiles = (
-			);
-			isEditable = 1;
-			outputFiles = (
-			);
-			script = "# 
-";
-		};
-/* End PBXBuildRule section */
-
 /* Begin PBXContainerItemProxy section */
 		C50DCA712D17309A00780112 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -58,7 +27,6 @@
 		C50DCA5F2D17309900780112 /* KH Volume slider.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "KH Volume slider.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C50DCA702D17309A00780112 /* KH Volume sliderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KH Volume sliderTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C50DCA7A2D17309A00780112 /* KH Volume sliderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KH Volume sliderUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C5EAAE622D3D866E006C06CE /* khtool.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = khtool.py; path = khtool/khtool.py; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -67,6 +35,19 @@
 			membershipExceptions = (
 				Assets.xcassets,
 				"Preview Content/Preview Assets.xcassets",
+				Resources/khtool/.gitignore,
+				Resources/khtool/LICENSE,
+				Resources/khtool/README.md,
+				Resources/pyssc/.gitignore,
+				Resources/pyssc/examples/100_times_mute_unmute.py,
+				Resources/pyssc/examples/buffersize_experiment.py,
+				Resources/pyssc/examples/dimm_demo.py,
+				Resources/pyssc/LICENSE,
+				Resources/pyssc/mypy.ini,
+				Resources/pyssc/README.md,
+				Resources/pyssc/requirements.txt,
+				Resources/pyssc/setup.py,
+				Resources/pyssc/tests/test.py,
 			);
 			target = C50DCA5E2D17309900780112 /* KH Volume slider */;
 		};
@@ -121,7 +102,6 @@
 		C50DCA562D17309900780112 = {
 			isa = PBXGroup;
 			children = (
-				C5EAAE622D3D866E006C06CE /* khtool.py */,
 				C50DCA612D17309900780112 /* KH Volume slider */,
 				C50DCA732D17309A00780112 /* KH Volume sliderTests */,
 				C50DCA7D2D17309A00780112 /* KH Volume sliderUITests */,
@@ -151,8 +131,6 @@
 				C5B99A542D1DB3B6003366EB /* Resources */,
 			);
 			buildRules = (
-				C525FE422D3AB5170057ACF6 /* PBXBuildRule */,
-				C525FE412D3AB50C0057ACF6 /* PBXBuildRule */,
 			);
 			dependencies = (
 			);
@@ -278,7 +256,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C5EAAE632D3D866E006C06CE /* khtool.py in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
