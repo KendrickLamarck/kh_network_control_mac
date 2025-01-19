@@ -21,14 +21,20 @@ struct StatusDisplay: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(lineWidth: 2).foregroundColor(.red))
         case .checkingSpeakerAvailability:
-            Text("Checking speaker availability...")
-            ProgressView().scaleEffect(0.5).frame(height: 20)
+            HStack {
+                Text("Checking speaker availability...")
+                ProgressView().scaleEffect(0.5).frame(height: 20)
+            }
         case .sendingEqSettings:
-            Text("Sending EQ settings...")
-            ProgressView().scaleEffect(0.5).frame(height: 20)
+            HStack {
+                Text("Sending EQ settings...")
+                ProgressView().scaleEffect(0.5).frame(height: 20)
+            }
         case .fetching:
-            Text("Fetching...")
-            ProgressView().scaleEffect(0.5).frame(height: 20)
+                HStack {
+                    Text("Fetching...")
+                    ProgressView().scaleEffect(0.5).frame(height: 20)
+                }
         case .clean:
             Text("Ready")
         }

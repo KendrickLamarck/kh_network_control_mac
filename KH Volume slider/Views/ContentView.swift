@@ -9,8 +9,6 @@ import SwiftUI
 
 struct ContentView: View {
     @State var khAccess = KHAccess()
-    @State var selectedEq: Int = 0
-    @State var selectedEqBand: Int = 0
 
     var body: some View {
         VStack {
@@ -29,57 +27,44 @@ struct ContentView: View {
                 }
             }
             .disabled(khAccess.status == .speakersUnavailable)
-            // We don't want to run this every time the window opens, only once. But how?
             .task {
-                guard (try? await khAccess.checkSpeakersAvailable()) != nil else {
-                    return
-                }
-                try? await khAccess.backupAndFetch()
+                try? await khAccess.checkSpeakersAvailable()
             }
-            
             Text("\(Int(khAccess.volume)) dB")
 
             Divider()
             
-            HStack {
-                Picker("EQ:", selection: $selectedEq) {
-                    Text("eq2").tag(0)
-                    Text("eq3").tag(1)
-                }
-                .frame(width: 150)
-                .onChange(of: selectedEq) {
-                    // not enough
-                    selectedEqBand = 0
-                }
-                Picker("Band:", selection: $selectedEqBand) {
-                    ForEach((1...khAccess.eqs[selectedEq].boost.count), id: \.self) { i in
-                        Text("\(i)").tag(i - 1)
-                    }
-                }.frame(width: 120)
-            }
-            EqBandPanel(
-                khAccess: khAccess,
-                selectedEq: selectedEq,
-                selectedEqBand: selectedEqBand
-            
-            )
+            EqPanel(khAccess: khAccess)
             
             Divider()
 
             HStack {
+                Button("Check speaker availability") {
+                    Task {
+                        try await khAccess.checkSpeakersAvailable()
+                    }
+                }
+                .disabled(khAccess.status == .checkingSpeakerAvailability)
+
                 Button("Fetch") {
                     Task {
                         try await khAccess.backupAndFetch()
                     }
                 }
                 .disabled(khAccess.status == .fetching || khAccess.status == .speakersUnavailable)
-
+                
+                Button("Send EQ settings") {
+                    Task {
+                        try await khAccess.sendEqToDevice()
+                    }
+                }
+                .disabled(khAccess.status == .sendingEqSettings || khAccess.status == .speakersUnavailable)
+                
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
-                StatusDisplay(status: khAccess.status)
             }
-            
+            StatusDisplay(status: khAccess.status)
         }
         .padding()
         .frame(width: 550)

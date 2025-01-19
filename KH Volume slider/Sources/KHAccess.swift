@@ -7,7 +7,8 @@
 
 import SwiftUI
 
-@Observable class KHAccess {
+@Observable
+class KHAccess {
     /*
      Fetches, sends and stores data from speakers.
      */
@@ -16,6 +17,7 @@ import SwiftUI
     private var pythonPath = URL.homeDirectory.appending(
         path: "code/kh_120/.venv/bin/python"
     )
+    //private var pythonPath = "python3"
     // ################################################################################
 
     private var khtoolPath = Bundle.main.url(
@@ -25,7 +27,6 @@ import SwiftUI
 
     var volume = 54.0
     var eqs = [Eq(numBands: 10), Eq(numBands: 20)]
-
     var status: Status = .clean
     
     enum Status {
@@ -67,7 +68,7 @@ import SwiftUI
     func checkSpeakersAvailable() async throws {
         status = .checkingSpeakerAvailability
         do {
-            try await _runKHToolProcess(args: ["-q"])
+            try await _runKHToolProcess(args: ["--expert", "'{\"osc\":{\"ping\":0}}'"])
             status = .clean
         } catch {
             status = .speakersUnavailable

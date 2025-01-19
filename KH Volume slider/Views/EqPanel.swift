@@ -38,22 +38,6 @@ struct EqBandPanel: View {
     var selectedEqBand: Int
 
     var body: some View {
-        HStack {
-            Picker("Type:", selection: $khAccess.eqs[selectedEq].type[selectedEqBand]) {
-                ForEach(Eq.EqType.allCases) { type in
-                    Text(type.rawValue).tag(type.rawValue)
-                }
-            }.frame(width: 160)
-            
-            Toggle("Enabled", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand])
-            
-            Button("Send EQ settings") {
-                Task {
-                    try await khAccess.sendEqToDevice()
-                }
-            }
-            .disabled(khAccess.status == .sendingEqSettings || khAccess.status == .speakersUnavailable)
-        }
         Grid(alignment: .topLeading) {
             GridRow {
                 EqSlider(
@@ -96,5 +80,56 @@ struct EqBandPanel: View {
                 )
             }
         }
+        HStack {
+            Picker("Type:", selection: $khAccess.eqs[selectedEq].type[selectedEqBand]) {
+                ForEach(Eq.EqType.allCases) { type in
+                    Text(type.rawValue).tag(type.rawValue)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(width: 160)
+            
+            Toggle("Enabled", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand])
+        }
+    }
+}
+
+
+struct EqPanel: View {
+    var khAccess: KHAccess
+
+    @State private var selectedEq: Int = 0
+    /// doesn't seem very elegant. But if I make this a single `@State: Int`, it seems
+    /// to be shared between instances if this view. I don't know how to do that.
+    /// OK there are ways to do it (using the `.id()` modifier), but then the state resets
+    /// when switching EQs. I don't think I want that.
+    @State private var selectedEqBand: [Int] = [0, 0]
+    var body: some View {
+        Picker("", selection: $selectedEq) {
+            Text("eq2").tag(0)
+            Text("eq3").tag(1)
+        }
+        .pickerStyle(.segmented)
+        
+        EqBandPanel(
+            khAccess: khAccess, selectedEq: selectedEq, selectedEqBand: selectedEqBand[selectedEq]
+        )
+
+        .pickerStyle(.segmented)
+        Picker("", selection: $selectedEqBand[selectedEq]) {
+            ForEach((1...10), id: \.self) { i in
+                Text("\(i)").tag(i - 1)
+            }
+        }
+        .pickerStyle(.segmented)
+        if selectedEq == 1{
+            Picker("", selection: $selectedEqBand[selectedEq]) {
+                ForEach((11...20), id: \.self) { i in
+                    Text("\(i)").tag(i - 1)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+
     }
 }
