@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C50171612D40447300EE0261 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C50DCA5F2D17309900780112 /* KH Volume slider.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "KH Volume slider.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C50DCA702D17309A00780112 /* KH Volume sliderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KH Volume sliderTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C50DCA7A2D17309A00780112 /* KH Volume sliderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KH Volume sliderUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,6 +100,7 @@
 				C50DCA732D17309A00780112 /* KH Volume sliderTests */,
 				C50DCA7D2D17309A00780112 /* KH Volume sliderUITests */,
 				C50DCA602D17309900780112 /* Products */,
+				C50171612D40447300EE0261 /* README.md */,
 			);
 			sourceTree = "<group>";
 		};

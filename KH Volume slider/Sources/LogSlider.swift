@@ -5,6 +5,8 @@
 //  Created by Leander Blume on 16.01.25.
 //
 
+// Stolen from https://gist.github.com/prachigauriar/c508799bad359c3aa271ccc0865de231
+
 import SwiftUI
 
 extension Binding where Value == Double {
