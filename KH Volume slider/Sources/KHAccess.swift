@@ -14,10 +14,8 @@ class KHAccess {
      */
     
     // ######################## CHANGE THIS TO YOUR PYTHON ############################
-    //private var pythonExecutable = URL.homeDirectory.appending(
-    //    path: "code/kh_120/.venv/bin/python"
-    //).path
-    private var pythonExecutable = "python3"
+    var pythonExecutable = "python3"
+    var networkInterface = "en0"
     // ################################################################################
 
     private var khtoolPath = Bundle.main.url(
@@ -26,10 +24,13 @@ class KHAccess {
     private var pythonPath = Bundle.main.url(
         forResource: "python-packages", withExtension: nil
     )
-    private var networkInterface = "en0"
 
+    /// I was wondering whether we should just store a KHJSON instance instead of these values because the whole
+    /// thing seems a bit doubled up. But maybe this is good as an abstraction layer between the json and the GUI.
     var volume = 54.0
     var eqs = [Eq(numBands: 10), Eq(numBands: 20)]
+    var muted = false
+    
     var status: Status = .clean
     
     enum Status {
@@ -114,6 +115,17 @@ class KHAccess {
         }
         eqs[0] = out.eq2
         eqs[1] = out.eq3
+    }
+    
+    func readStateFromBackup() throws {
+        let json = try readBackupAsStruct()
+        guard let commands = json.devices.values.first?.commands else {
+            throw KHAccessError.jsonError
+        }
+        muted = commands.audio.out.mute
+        volume = commands.audio.out.level
+        eqs[0] = commands.audio.out.eq2
+        eqs[1] = commands.audio.out.eq3
     }
 
     func backupAndFetch() async throws {

@@ -38,17 +38,6 @@
 				Resources/khtool/.gitignore,
 				Resources/khtool/LICENSE,
 				Resources/khtool/README.md,
-				Resources/pyssc/.gitignore,
-				Resources/pyssc/examples/100_times_mute_unmute.py,
-				Resources/pyssc/examples/buffersize_experiment.py,
-				Resources/pyssc/examples/dimm_demo.py,
-				Resources/pyssc/LICENSE,
-				Resources/pyssc/mypy.ini,
-				Resources/pyssc/pyssc,
-				Resources/pyssc/README.md,
-				Resources/pyssc/requirements.txt,
-				Resources/pyssc/setup.py,
-				Resources/pyssc/tests/test.py,
 			);
 			target = C50DCA5E2D17309900780112 /* KH Volume slider */;
 		};
@@ -61,7 +50,6 @@
 				C5B99A552D1DB3B7003366EB /* Exceptions for "KH Volume slider" folder in "KH Volume slider" target */,
 			);
 			explicitFolders = (
-				Resources/pyssc/pyssc,
 				"Resources/python-packages",
 			);
 			path = "KH Volume slider";

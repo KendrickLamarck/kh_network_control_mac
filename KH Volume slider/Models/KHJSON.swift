@@ -60,7 +60,8 @@ struct KHJSON: Codable {
                 var out: Outparams
 
                 struct Outparams: Codable {
-                    var level: Double?
+                    var level: Double
+                    var mute: Bool
                     var eq2: Eq
                     var eq3: Eq
                 }
