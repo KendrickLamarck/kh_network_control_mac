@@ -31,6 +31,14 @@ struct ContentView: View {
                 try? await khAccess.checkSpeakersAvailable()
             }
             Text("\(Int(khAccess.volume)) dB")
+            
+            Toggle("Mute", systemImage: "speaker.slash.fill", isOn: $khAccess.muted)
+                .toggleStyle(.button)
+                .onChange(of: khAccess.muted) {
+                    Task {
+                        try await khAccess.muteOrUnmute()
+                    }
+                }
 
             Divider()
             
@@ -60,14 +68,21 @@ struct ContentView: View {
                 }
                 .disabled(khAccess.status == .sendingEqSettings || khAccess.status == .speakersUnavailable)
                 
+                Spacer()
+                
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
             }
-            StatusDisplay(status: khAccess.status)
+            HStack {
+                Spacer()
+                StatusDisplay(status: khAccess.status)
+            }
+
         }
         .padding()
         .frame(width: 550)
+        
     }
 }
 

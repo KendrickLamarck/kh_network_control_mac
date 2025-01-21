@@ -99,23 +99,6 @@ class KHAccess {
         let data = try Data(contentsOf: backupURL)
         return try JSONDecoder().decode(KHJSON.self, from: data)
     }
-
-    func readVolumeFromBackup() throws {
-        let json = try readBackupAsStruct()
-        guard let new_volume = json.devices.values.first?.commands.audio.out.level else {
-            throw KHAccessError.jsonError
-        }
-        volume = new_volume
-    }
-
-    func readEqFromBackup() throws {
-        let json = try readBackupAsStruct()
-        guard let out = json.devices.values.first?.commands.audio.out else {
-            throw KHAccessError.jsonError
-        }
-        eqs[0] = out.eq2
-        eqs[1] = out.eq3
-    }
     
     func readStateFromBackup() throws {
         let json = try readBackupAsStruct()
@@ -131,8 +114,7 @@ class KHAccess {
     func backupAndFetch() async throws {
         status = .fetching
         try await backupDevice()
-        try readVolumeFromBackup()
-        try readEqFromBackup()
+        try readStateFromBackup()
         status = .clean
     }
 
@@ -176,5 +158,13 @@ class KHAccess {
         try updatedData.writeToFile(filePath: eqBackupURL)
         try await runKHToolProcess(args: ["--restore", "\"" + eqBackupURL.path + "\""])
         status = .clean
+    }
+
+    func muteOrUnmute() async throws {
+        if muted {
+            try await runKHToolProcess(args: ["--mute"])
+        } else {
+            try await runKHToolProcess(args: ["--unmute"])
+        }
     }
 }

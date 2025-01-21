@@ -88,8 +88,9 @@ struct EqBandPanel: View {
             }
             .pickerStyle(.menu)
             .frame(width: 160)
-            
+            Spacer()
             Toggle("Enabled", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand])
+                .toggleStyle(.switch)
         }
     }
 }
@@ -112,7 +113,9 @@ struct EqPanel: View {
         .pickerStyle(.segmented)
         
         EqBandPanel(
-            khAccess: khAccess, selectedEq: selectedEq, selectedEqBand: selectedEqBand[selectedEq]
+            khAccess: khAccess,
+            selectedEq: selectedEq,
+            selectedEqBand: selectedEqBand[selectedEq]
         )
 
         .pickerStyle(.segmented)
