@@ -14,15 +14,18 @@ class KHAccess {
      */
     
     // ######################## CHANGE THIS TO YOUR PYTHON ############################
-    private var pythonPath = URL.homeDirectory.appending(
-        path: "code/kh_120/.venv/bin/python"
-    )
-    //private var pythonPath = "python3"
+    //private var pythonExecutable = URL.homeDirectory.appending(
+    //    path: "code/kh_120/.venv/bin/python"
+    //).path
+    private var pythonExecutable = "python3"
     // ################################################################################
 
     private var khtoolPath = Bundle.main.url(
         forResource: "khtool", withExtension: "py"
     )!
+    private var pythonPath = Bundle.main.url(
+        forResource: "python-packages", withExtension: nil
+    )
     private var networkInterface = "en0"
 
     var volume = 54.0
@@ -37,7 +40,6 @@ class KHAccess {
         case speakersUnavailable
     }
 
-    // TODO use these
     enum KHAccessError: Error {
         case processError
         case speakersNotReachable
@@ -49,13 +51,14 @@ class KHAccess {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
         process.currentDirectoryURL = Bundle.main.resourceURL!
+        process.environment = ["PYTHONPATH": pythonPath!.path]
         var argString = ""
         for arg in args {
             argString += " " + arg
         }
         process.arguments = [
             "-c",
-            "\(pythonPath.path) \"\(khtoolPath.path)\" -i \(networkInterface)"
+            "\(pythonExecutable) \"\(khtoolPath.path)\" -i \(networkInterface)"
                 + argString
         ]
         try process.run()
@@ -144,12 +147,14 @@ class KHAccess {
     func sendEqToDevice() async throws {
         status = .sendingEqSettings
         let data = try readBackupAsStruct()
-        var updatedData = try updateKhjsonWithEq(data)
-        // set volume to nil manually. This lets us skip creating a backup, speeding up this
-        // operation considerably.
-        for k in updatedData.devices.keys {
-            updatedData.devices[k]?.commands.audio.out.level = nil
-        }
+        let updatedData = try updateKhjsonWithEq(data)
+        /// set volume to nil manually. This lets us skip creating a backup, speeding up this
+        /// operation considerably.
+        /// Why do we even do this. We assume the state of the app matches the speaker
+        /// state anyway, right?
+        //for k in updatedData.devices.keys {
+        //    updatedData.devices[k]?.commands.audio.out.level = nil
+        //}
         // We can unfortunately not send this with --expert because the request is too
         // long.
         // TODO we can delete the file after running this function. What's

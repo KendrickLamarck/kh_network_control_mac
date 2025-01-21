@@ -62,6 +62,7 @@
 			);
 			explicitFolders = (
 				Resources/pyssc/pyssc,
+				"Resources/python-packages",
 			);
 			path = "KH Volume slider";
 			sourceTree = "<group>";
