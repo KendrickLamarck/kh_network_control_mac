@@ -23,9 +23,9 @@ struct KH_Volume_sliderTests_Offline {
 
     @Test func testReadFromBackup() async throws {
         let khAccess = KHAccess()
-        try khAccess.readVolumeFromBackup()
+        try khAccess.readStateFromBackup()
         #expect(khAccess.volume == 66)
-        try khAccess.readEqFromBackup()
+        try khAccess.readStateFromBackup()
         #expect(khAccess.eqs[1].frequency[0] == 43)
     }
 

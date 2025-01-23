@@ -18,8 +18,12 @@ struct StatusDisplay: View {
                 .padding(.vertical, 3)
                 .padding(.horizontal, 6)
                 .background(.white)
+                .foregroundColor(.black)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(lineWidth: 2).foregroundColor(.red))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(lineWidth: 2).foregroundColor(.red)
+                )
         case .checkingSpeakerAvailability:
             HStack {
                 Text("Checking speaker availability...")

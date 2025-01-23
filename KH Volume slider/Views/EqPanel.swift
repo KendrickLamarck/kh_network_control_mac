@@ -14,7 +14,7 @@ struct EqSlider: View {
     var range: ClosedRange<Double>
     var logarithmic: Bool
     var selectedEqBand: Int
-    
+
     var body: some View {
         let unitString: String = unit != nil ? " (\(unit!))" : ""
         Text(name + unitString)
@@ -24,13 +24,12 @@ struct EqSlider: View {
             Slider(value: binding[selectedEqBand], in: range)
         }
         TextField(
-            "Frequency",
+            name,
             value: binding[selectedEqBand],
             format: .number.precision(.fractionLength(1))
-        ).frame(width:80)
+        ).frame(width: 80)
     }
 }
-
 
 struct EqBandPanel: View {
     @Bindable var khAccess: KHAccess
@@ -89,12 +88,12 @@ struct EqBandPanel: View {
             .pickerStyle(.menu)
             .frame(width: 160)
             Spacer()
-            Toggle("Enabled", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand])
-                .toggleStyle(.switch)
+            Toggle(
+                "Enable band", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand]
+            ).toggleStyle(.switch)
         }
     }
 }
-
 
 struct EqPanel: View {
     var khAccess: KHAccess
@@ -111,7 +110,7 @@ struct EqPanel: View {
             Text("eq3").tag(1)
         }
         .pickerStyle(.segmented)
-        
+
         EqBandPanel(
             khAccess: khAccess,
             selectedEq: selectedEq,
@@ -125,7 +124,7 @@ struct EqPanel: View {
             }
         }
         .pickerStyle(.segmented)
-        if selectedEq == 1{
+        if selectedEq == 1 {
             Picker("", selection: $selectedEqBand[selectedEq]) {
                 ForEach((11...20), id: \.self) { i in
                     Text("\(i)").tag(i - 1)

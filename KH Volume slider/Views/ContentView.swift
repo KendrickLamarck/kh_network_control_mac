@@ -31,7 +31,7 @@ struct ContentView: View {
                 try? await khAccess.checkSpeakersAvailable()
             }
             Text("\(Int(khAccess.volume)) dB")
-            
+
             Toggle("Mute", systemImage: "speaker.slash.fill", isOn: $khAccess.muted)
                 .toggleStyle(.button)
                 .onChange(of: khAccess.muted) {
@@ -41,13 +41,41 @@ struct ContentView: View {
                 }
 
             Divider()
-            
+
+            HStack {
+                Text("Logo brightness")
+                Slider(value: $khAccess.logoBrightness, in: 0...125) {
+                    Text("")
+                } onEditingChanged: { editing in
+                    if !editing {
+                        Task {
+                            try await khAccess.setLogoBrightness()
+                        }
+                    }
+                }
+                .disabled(khAccess.status == .speakersUnavailable)
+
+                TextField(
+                    "Logo brightness",
+                    value: $khAccess.logoBrightness,
+                    format: .number.precision(.fractionLength(0))
+                )
+                .frame(width: 80)
+                .onSubmit {
+                    Task {
+                        try await khAccess.setLogoBrightness()
+                    }
+                }
+            }
+
+            Divider()
+
             EqPanel(khAccess: khAccess)
-            
+
             Divider()
 
             HStack {
-                Button("Check speaker availability") {
+                Button("Ping") {
                     Task {
                         try await khAccess.checkSpeakersAvailable()
                     }
@@ -59,30 +87,34 @@ struct ContentView: View {
                         try await khAccess.backupAndFetch()
                     }
                 }
-                .disabled(khAccess.status == .fetching || khAccess.status == .speakersUnavailable)
-                
-                Button("Send EQ settings") {
+                .disabled(
+                    khAccess.status == .fetching
+                        || khAccess.status == .speakersUnavailable)
+
+                Button("Send EQ") {
                     Task {
                         try await khAccess.sendEqToDevice()
                     }
                 }
-                .disabled(khAccess.status == .sendingEqSettings || khAccess.status == .speakersUnavailable)
-                
+                .disabled(
+                    khAccess.status == .sendingEqSettings
+                        || khAccess.status == .speakersUnavailable)
+
                 Spacer()
-                
+
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)
                 }
             }
             HStack {
-                Spacer()
                 StatusDisplay(status: khAccess.status)
+                Spacer()
+                SettingsLink()
             }
 
         }
-        .padding()
+        .scenePadding()
         .frame(width: 550)
-        
     }
 }
 

@@ -11,8 +11,8 @@ Prerequisites:
 * Install Xcode
 * Make sure you have `python3` available in the terminal.
 
-**Note:** You can use a different python executable path, but if you do, you have to change the variable `pythonExecutable` in `KH Volume slider/Sources/KHAccess.swift`.
+**Note:** You can change the python executable path in the settings.
 
-Clone the project. Find out the network interface your speakers are connected via. If it's not `en0`, change the `networkInterface` variable in `KH Volume slider/Sources/KHAccess.swift`.
+Clone the project. Find out the network interface your speakers are connected via. If it's not `en0`, change it in the settings.
 
 Now open `KH Volume slider.xcodeproj` in Xcode, build and run the app. At this point we probably get stuck because of code signage/ownership issues or something.

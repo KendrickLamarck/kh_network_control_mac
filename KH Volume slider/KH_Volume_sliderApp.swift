@@ -14,5 +14,8 @@ struct KH_Volume_sliderApp: App {
             ContentView()
         }
         .menuBarExtraStyle(.window)
+        Settings {
+            SettingsView()
+        }
     }
 }

@@ -12,27 +12,14 @@ class KHAccess {
     /*
      Fetches, sends and stores data from speakers.
      */
-    
-    // ######################## CHANGE THIS TO YOUR PYTHON ############################
-    var pythonExecutable = "python3"
-    var networkInterface = "en0"
-    // ################################################################################
-
-    private var khtoolPath = Bundle.main.url(
-        forResource: "khtool", withExtension: "py"
-    )!
-    private var pythonPath = Bundle.main.url(
-        forResource: "python-packages", withExtension: nil
-    )
-
     /// I was wondering whether we should just store a KHJSON instance instead of these values because the whole
     /// thing seems a bit doubled up. But maybe this is good as an abstraction layer between the json and the GUI.
     var volume = 54.0
     var eqs = [Eq(numBands: 10), Eq(numBands: 20)]
     var muted = false
-    
+    var logoBrightness = 100.0
     var status: Status = .clean
-    
+
     enum Status {
         case clean
         case fetching
@@ -48,19 +35,28 @@ class KHAccess {
         case jsonError
     }
 
+    let khtoolPath = Bundle.main.url(forResource: "khtool", withExtension: "py")!
+    let pythonPath = Bundle.main.url(
+        forResource: "python-packages", withExtension: nil
+    )!
+
     func _runKHToolProcess(args: [String]) async throws {
+        let pythonExecutable =
+            UserDefaults.standard.string(forKey: "pythonExecutable") ?? "python3"
+        let networkInterface =
+            UserDefaults.standard.string(forKey: "networkInterface") ?? "en0"
         let process = Process()
         process.executableURL = URL(filePath: "/bin/sh")
         process.currentDirectoryURL = Bundle.main.resourceURL!
-        process.environment = ["PYTHONPATH": pythonPath!.path]
+        process.environment = ["PYTHONPATH": pythonPath.path]
         var argString = ""
         for arg in args {
             argString += " " + arg
         }
         process.arguments = [
             "-c",
-            "\(pythonExecutable) \"\(khtoolPath.path)\" -i \(networkInterface)"
-                + argString
+            "\"\(pythonExecutable)\" \"\(khtoolPath.path)\" -i \(networkInterface)"
+                + argString,
         ]
         try process.run()
         process.waitUntilExit()
@@ -99,7 +95,7 @@ class KHAccess {
         let data = try Data(contentsOf: backupURL)
         return try JSONDecoder().decode(KHJSON.self, from: data)
     }
-    
+
     func readStateFromBackup() throws {
         let json = try readBackupAsStruct()
         guard let commands = json.devices.values.first?.commands else {
@@ -109,6 +105,7 @@ class KHAccess {
         volume = commands.audio.out.level
         eqs[0] = commands.audio.out.eq2
         eqs[1] = commands.audio.out.eq3
+        logoBrightness = commands.ui.logo.brightness
     }
 
     func backupAndFetch() async throws {
@@ -142,16 +139,8 @@ class KHAccess {
         status = .sendingEqSettings
         let data = try readBackupAsStruct()
         let updatedData = try updateKhjsonWithEq(data)
-        /// set volume to nil manually. This lets us skip creating a backup, speeding up this
-        /// operation considerably.
-        /// Why do we even do this. We assume the state of the app matches the speaker
-        /// state anyway, right?
-        //for k in updatedData.devices.keys {
-        //    updatedData.devices[k]?.commands.audio.out.level = nil
-        //}
         // We can unfortunately not send this with --expert because the request is too
         // long.
-        // TODO we can delete the file after running this function. What's
         let eqBackupURL = Bundle.main.url(
             forResource: "gui_eq_settings", withExtension: "json"
         )!
@@ -166,5 +155,14 @@ class KHAccess {
         } else {
             try await runKHToolProcess(args: ["--unmute"])
         }
+    }
+    
+    func setLogoBrightness() async throws {
+        /// We don't want to use the `--brightness` option because it can't take floats (although we don't either)
+        /// and it only goes up to 100 even though the real brightness goes up to 125.
+        try await runKHToolProcess(args: [
+            "--expert",
+            "'{\"ui\":{\"logo\":{\"brightness\":\(Int(logoBrightness))}}}'"
+        ])
     }
 }

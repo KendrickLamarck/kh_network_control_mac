@@ -41,6 +41,40 @@ struct Eq: Codable {
     }
 }
 
+struct Commands: Codable {
+    var audio: Audio
+    
+    struct Audio: Codable {
+        var out: Outparams
+        
+        struct Outparams: Codable {
+            var level: Double
+            var mute: Bool
+            var solo: Bool
+            var eq2: Eq
+            var eq3: Eq
+            var delay: Double
+            var phaseinversion: Bool
+            var mixer: Mixer
+
+            struct Mixer: Codable {
+                var inputs: [String]
+                var levels: [Double]
+            }
+        }
+    }
+    
+    var ui: UI
+    
+    struct UI: Codable {
+        var logo: Logo
+        
+        struct Logo: Codable {
+            var brightness: Double
+        }
+    }
+}
+
 struct KHJSON: Codable {
     /*
      struct mirroring the structure of backup.json created by khtool.
@@ -52,21 +86,6 @@ struct KHJSON: Codable {
         var serial: String
         var version: String
         var commands: Commands
-        
-        struct Commands: Codable {
-            var audio: Audio
-            
-            struct Audio: Codable {
-                var out: Outparams
-
-                struct Outparams: Codable {
-                    var level: Double
-                    var mute: Bool
-                    var eq2: Eq
-                    var eq3: Eq
-                }
-            }
-        }
     }
 
     func writeToFile(filePath: URL) throws {
