@@ -105,33 +105,34 @@ struct EqPanel: View {
     /// when switching EQs. I don't think I want that.
     @State private var selectedEqBand: [Int] = [0, 0]
     var body: some View {
-        Picker("", selection: $selectedEq) {
-            Text("eq2").tag(0)
-            Text("eq3").tag(1)
-        }
-        .pickerStyle(.segmented)
-
-        EqBandPanel(
-            khAccess: khAccess,
-            selectedEq: selectedEq,
-            selectedEqBand: selectedEqBand[selectedEq]
-        )
-
-        .pickerStyle(.segmented)
-        Picker("", selection: $selectedEqBand[selectedEq]) {
-            ForEach((1...10), id: \.self) { i in
-                Text("\(i)").tag(i - 1)
+        VStack {
+            Picker("", selection: $selectedEq) {
+                Text("eq2").tag(0)
+                Text("eq3").tag(1)
             }
-        }
-        .pickerStyle(.segmented)
-        if selectedEq == 1 {
+            .pickerStyle(.segmented)
+            
+            EqBandPanel(
+                khAccess: khAccess,
+                selectedEq: selectedEq,
+                selectedEqBand: selectedEqBand[selectedEq]
+            )
+            
+            .pickerStyle(.segmented)
             Picker("", selection: $selectedEqBand[selectedEq]) {
-                ForEach((11...20), id: \.self) { i in
+                ForEach((1...10), id: \.self) { i in
                     Text("\(i)").tag(i - 1)
                 }
             }
             .pickerStyle(.segmented)
+            if selectedEq == 1 {
+                Picker("", selection: $selectedEqBand[selectedEq]) {
+                    ForEach((11...20), id: \.self) { i in
+                        Text("\(i)").tag(i - 1)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
         }
-
     }
 }
