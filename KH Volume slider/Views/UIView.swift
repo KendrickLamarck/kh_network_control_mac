@@ -1,0 +1,40 @@
+//
+//  UIView2.swift
+//  KH Volume slider
+//
+//  Created by Leander Blume on 26.01.25.
+//
+
+import SwiftUI
+
+struct UIView: View {
+    @Bindable var khAccess: KHAccess
+
+    var body: some View {
+        HStack {
+            Text("Logo brightness")
+            Slider(value: $khAccess.logoBrightness, in: 0...125) {
+                Text("")
+            } onEditingChanged: { editing in
+                if !editing {
+                    Task {
+                        try await khAccess.sendLogoBrightness()
+                    }
+                }
+            }
+            .disabled(khAccess.status == .speakersUnavailable)
+
+            TextField(
+                "Logo brightness",
+                value: $khAccess.logoBrightness,
+                format: .number.precision(.fractionLength(0))
+            )
+            .frame(width: 80)
+            .onSubmit {
+                Task {
+                    try await khAccess.sendLogoBrightness()
+                }
+            }
+        }
+    }
+}

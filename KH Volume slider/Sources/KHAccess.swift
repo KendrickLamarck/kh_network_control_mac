@@ -7,8 +7,7 @@
 
 import SwiftUI
 
-@Observable
-class KHAccess {
+@Observable class KHAccess {
     /*
      Fetches, sends and stores data from speakers.
      */
@@ -149,7 +148,7 @@ class KHAccess {
         status = .clean
     }
 
-    func muteOrUnmute() async throws {
+    func sendMuteOrUnmute() async throws {
         if muted {
             try await runKHToolProcess(args: ["--mute"])
         } else {
@@ -157,7 +156,7 @@ class KHAccess {
         }
     }
     
-    func setLogoBrightness() async throws {
+    func sendLogoBrightness() async throws {
         /// We don't want to use the `--brightness` option because it can't take floats (although we don't either)
         /// and it only goes up to 100 even though the real brightness goes up to 125.
         try await runKHToolProcess(args: [
