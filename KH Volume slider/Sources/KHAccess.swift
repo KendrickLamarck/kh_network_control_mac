@@ -145,38 +145,8 @@ import SwiftUI
         status = .clean
     }
 
-    private func updateKhjsonWithEq(_ data: KHJSON) throws -> KHJSON {
-        var new_data = data
-        guard let out = new_data.devices.values.first?.commands.audio.out else {
-            throw KHAccessError.jsonError
-        }
-        var new_data_eqs = [out.eq2, out.eq3]
-        for j in 0..<eqs.count {
-            new_data_eqs[j] = eqs[j]
-        }
-        for k in new_data.devices.keys {
-            new_data.devices[k]?.commands.audio.out.eq2 = new_data_eqs[0]
-            new_data.devices[k]?.commands.audio.out.eq3 = new_data_eqs[1]
-        }
-        return new_data
-    }
-
     private func sendVolumeToDevice() async throws {
         try await runKHToolProcess(args: ["--level", "\(Int(volume))"])
-    }
-
-    private func sendEqToDevice() async throws {
-        status = .sendingEqSettings
-        let data = try readBackupAsStruct()
-        let updatedData = try updateKhjsonWithEq(data)
-        // We can unfortunately not send this with --expert because the request is too
-        // long.
-        let eqBackupURL = Bundle.main.url(
-            forResource: "gui_eq_settings", withExtension: "json"
-        )!
-        try updatedData.writeToFile(filePath: eqBackupURL)
-        try await runKHToolProcess(args: ["--restore", "\"" + eqBackupURL.path + "\""])
-        status = .clean
     }
 
     private func sendEqBoost(eqIdx: Int, eqName: String) async throws {
@@ -263,10 +233,6 @@ import SwiftUI
                 try await sendEqType(eqIdx: eqIdx, eqName: eqName)
                 eqsDevice[eqIdx].type = eqs[eqIdx].type
             }
-        }
-        if eqs != eqsDevice {
-            try await sendEqToDevice()
-            eqsDevice = eqs
         }
     }
 }
