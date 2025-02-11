@@ -13,11 +13,21 @@ import SwiftUI
      */
     /// I was wondering whether we should just store a KHJSON instance instead of these values because the whole
     /// thing seems a bit doubled up. But maybe this is good as an abstraction layer between the json and the GUI.
+
+    // UI state
     var volume = 54.0
     var eqs = [Eq(numBands: 10), Eq(numBands: 20)]
     var muted = false
     var logoBrightness = 100.0
+
     var status: Status = .clean
+
+    // (last known) device state. We compare UI state against this to selectively send
+    // changed values to the device.
+    private var volumeDevice = 54.0
+    private var eqsDevice = [Eq(numBands: 10), Eq(numBands: 20)]
+    private var mutedDevice = false
+    private var logoBrightnessDevice = 100.0
 
     enum Status {
         case clean
@@ -30,6 +40,7 @@ import SwiftUI
     enum KHAccessError: Error {
         case processError
         case speakersNotReachable
+        case invalidCommand
         case fileError
         case jsonError
     }
@@ -39,7 +50,12 @@ import SwiftUI
         forResource: "python-packages", withExtension: nil
     )!
 
-    func _runKHToolProcess(args: [String]) async throws {
+    private func runKHToolProcess(args: [String], checkAvailable: Bool = true)
+        async throws
+    {
+        if checkAvailable && status == .speakersUnavailable {
+            throw KHAccessError.speakersNotReachable
+        }
         let pythonExecutable =
             UserDefaults.standard.string(forKey: "pythonExecutable") ?? "python3"
         let networkInterface =
@@ -59,15 +75,31 @@ import SwiftUI
         ]
         try process.run()
         process.waitUntilExit()
+        // TODO check for malformed commands / 404 paths and throw the appropriate
+        // error
         if process.terminationStatus != 0 {
             throw KHAccessError.processError
         }
     }
 
+    private func sendSSCCommand(path: [String], value: Any, checkAvailable: Bool = true)
+        async throws
+    {
+        /// sends the command `{"p1":{"p2":{String(value)}}` to the device,
+        /// if `path=["p1", "p2"]`.
+        var jsonPath = String(describing: value)
+        for p in path.reversed() {
+            jsonPath = "{\"\(p)\":\(jsonPath)}"
+        }
+        jsonPath = "'" + jsonPath + "'"
+        try await runKHToolProcess(
+            args: ["--expert", jsonPath], checkAvailable: checkAvailable)
+    }
+
     func checkSpeakersAvailable() async throws {
         status = .checkingSpeakerAvailability
         do {
-            try await _runKHToolProcess(args: ["--expert", "'{\"osc\":{\"ping\":0}}'"])
+            try await sendSSCCommand(path: ["osc", "ping"], value: 0)
             status = .clean
         } catch {
             status = .speakersUnavailable
@@ -75,19 +107,12 @@ import SwiftUI
         }
     }
 
-    func runKHToolProcess(args: [String]) async throws {
-        if status == .speakersUnavailable {
-            throw KHAccessError.speakersNotReachable
-        }
-        return try await _runKHToolProcess(args: args)
-    }
-
-    func backupDevice() async throws {
+    private func backupDevice() async throws {
         let backupPath = Bundle.main.path(forResource: "gui_backup", ofType: "json")!
         try await runKHToolProcess(args: ["--backup", "\"" + backupPath + "\""])
     }
 
-    func readBackupAsStruct() throws -> KHJSON {
+    private func readBackupAsStruct() throws -> KHJSON {
         let backupURL = Bundle.main.url(
             forResource: "gui_backup", withExtension: "json"
         )!
@@ -95,16 +120,21 @@ import SwiftUI
         return try JSONDecoder().decode(KHJSON.self, from: data)
     }
 
-    func readStateFromBackup() throws {
+    private func readStateFromBackup() throws {
         let json = try readBackupAsStruct()
         guard let commands = json.devices.values.first?.commands else {
             throw KHAccessError.jsonError
         }
-        muted = commands.audio.out.mute
-        volume = commands.audio.out.level
-        eqs[0] = commands.audio.out.eq2
-        eqs[1] = commands.audio.out.eq3
-        logoBrightness = commands.ui.logo.brightness
+        mutedDevice = commands.audio.out.mute
+        volumeDevice = commands.audio.out.level
+        eqsDevice[0] = commands.audio.out.eq2
+        eqsDevice[1] = commands.audio.out.eq3
+        logoBrightnessDevice = commands.ui.logo.brightness
+
+        muted = mutedDevice
+        volume = volumeDevice
+        eqs = eqsDevice
+        logoBrightness = logoBrightnessDevice
     }
 
     func backupAndFetch() async throws {
@@ -114,7 +144,7 @@ import SwiftUI
         status = .clean
     }
 
-    func updateKhjsonWithEq(_ data: KHJSON) throws -> KHJSON {
+    private func updateKhjsonWithEq(_ data: KHJSON) throws -> KHJSON {
         var new_data = data
         guard let out = new_data.devices.values.first?.commands.audio.out else {
             throw KHAccessError.jsonError
@@ -130,11 +160,11 @@ import SwiftUI
         return new_data
     }
 
-    func sendVolumeToDevice() async throws {
+    private func sendVolumeToDevice() async throws {
         try await runKHToolProcess(args: ["--level", "\(Int(volume))"])
     }
 
-    func sendEqToDevice() async throws {
+    private func sendEqToDevice() async throws {
         status = .sendingEqSettings
         let data = try readBackupAsStruct()
         let updatedData = try updateKhjsonWithEq(data)
@@ -148,20 +178,37 @@ import SwiftUI
         status = .clean
     }
 
-    func sendMuteOrUnmute() async throws {
+    private func sendMuteOrUnmute() async throws {
         if muted {
             try await runKHToolProcess(args: ["--mute"])
         } else {
             try await runKHToolProcess(args: ["--unmute"])
         }
     }
-    
-    func sendLogoBrightness() async throws {
+
+    private func sendLogoBrightness() async throws {
         /// We don't want to use the `--brightness` option because it can't take floats (although we don't either)
         /// and it only goes up to 100 even though the real brightness goes up to 125.
-        try await runKHToolProcess(args: [
-            "--expert",
-            "'{\"ui\":{\"logo\":{\"brightness\":\(Int(logoBrightness))}}}'"
-        ])
+        try await sendSSCCommand(
+            path: ["ui", "logo", "brightness"], value: logoBrightness)
+    }
+
+    func send() async throws {
+        if volume != volumeDevice {
+            try await sendVolumeToDevice()
+            volumeDevice = volume
+        }
+        if eqs != eqsDevice {
+            try await sendEqToDevice()
+            eqsDevice = eqs
+        }
+        if muted != mutedDevice {
+            try await sendMuteOrUnmute()
+            mutedDevice = muted
+        }
+        if logoBrightness != logoBrightnessDevice {
+            try await sendLogoBrightness()
+            logoBrightnessDevice = logoBrightness
+        }
     }
 }

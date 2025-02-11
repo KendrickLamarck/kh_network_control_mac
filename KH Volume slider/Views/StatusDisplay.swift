@@ -11,36 +11,35 @@ struct StatusDisplay: View {
     var status: KHAccess.Status
 
     var body: some View {
-        switch status {
-        case .speakersUnavailable:
-            Label("Speakers not available", systemImage: "exclamationmark.triangle")
-                .fontWeight(.bold)
-                .padding(.vertical, 3)
-                .padding(.horizontal, 6)
-                .background(.white)
-                .foregroundColor(.black)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(lineWidth: 2).foregroundColor(.red)
-                )
-        case .checkingSpeakerAvailability:
-            HStack {
-                Text("Checking speaker availability...")
-                ProgressView().scaleEffect(0.5).frame(height: 20)
-            }
-        case .sendingEqSettings:
-            HStack {
-                Text("Sending EQ settings...")
-                ProgressView().scaleEffect(0.5).frame(height: 20)
-            }
-        case .fetching:
-                HStack {
-                    Text("Fetching...")
-                    ProgressView().scaleEffect(0.5).frame(height: 20)
+        HStack {
+            Group {
+                switch status {
+                case .clean:
+                    Image(systemName: "circle.fill").foregroundColor(.green)
+                case .fetching:
+                    ProgressView().scaleEffect(0.5)
+                case .sendingEqSettings:
+                    ProgressView().scaleEffect(0.5)
+                case .checkingSpeakerAvailability:
+                    ProgressView().scaleEffect(0.5)
+                case .speakersUnavailable:
+                    Image(systemName: "circle.fill").foregroundColor(.red)
                 }
-        case .clean:
-            Text("Ready")
+            }
+            .frame(height: 20)
+            .frame(minWidth: 33)
+            switch status {
+            case .speakersUnavailable:
+                Text("Speakers unavailable")
+            case .checkingSpeakerAvailability:
+                Text("Checking speaker availability...")
+            case .sendingEqSettings:
+                Text("Sending EQ settings...")
+            case .fetching:
+                Text("Fetching...")
+            case .clean:
+                EmptyView()
+            }
         }
     }
 }

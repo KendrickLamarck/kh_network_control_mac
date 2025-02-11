@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct VolumeSlider: View {
+struct VolumeTab: View {
     @Bindable var khAccess: KHAccess
 
     var body: some View {
@@ -22,14 +22,11 @@ struct VolumeSlider: View {
             } onEditingChanged: { editing in
                 if !editing {
                     Task {
-                        try await khAccess.sendVolumeToDevice()
+                        try await khAccess.send()
                     }
                 }
             }
             .disabled(khAccess.status == .speakersUnavailable)
-            .task {
-                try? await khAccess.checkSpeakersAvailable()
-            }
 
             Toggle(
                 "Mute", systemImage: "speaker.slash.fill",
@@ -38,9 +35,10 @@ struct VolumeSlider: View {
             .toggleStyle(.button)
             .onChange(of: khAccess.muted) {
                 Task {
-                    try await khAccess.sendMuteOrUnmute()
+                    try await khAccess.send()
                 }
             }
+            .disabled(khAccess.status == .speakersUnavailable)
         }
     }
 }

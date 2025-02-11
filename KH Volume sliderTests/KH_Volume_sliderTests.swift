@@ -31,6 +31,6 @@ struct KH_Volume_sliderTests_Offline {
 
     @Test func testPythonReachable() async throws {
         let khAccess = KHAccess()
-        try await khAccess._runKHToolProcess(args: ["-v"])
+        try await khAccess.runKHToolProcess(args: ["-v"])
     }
 }

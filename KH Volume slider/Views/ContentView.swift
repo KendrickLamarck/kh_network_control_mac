@@ -14,18 +14,20 @@ struct ContentView: View {
         VStack {
             TabView {
                 Tab("Volume", systemImage: "speaker.wave.3") {
-                    VolumeSlider(khAccess: khAccess)
+                    VolumeTab(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
                 }
-                Tab("EQ", systemImage: "equal") {
+                Tab("DSP", systemImage: "equal") {
                     EqPanel(khAccess: khAccess).padding(.horizontal).padding(.bottom)
                 }
-                Tab("UI", systemImage: "paintpalette") {
-                    UIView(khAccess: khAccess)
+                Tab("Hardware", systemImage: "paintpalette") {
+                    HardwareTab(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
                 }
             }
             .frame(minWidth: 450)
+            
+            Divider()
 
             VStack {
                 HStack {
@@ -44,12 +46,6 @@ struct ContentView: View {
                     .disabled(
                         khAccess.status == .fetching
                             || khAccess.status == .speakersUnavailable)
-
-                    Button("Send EQ") {
-                        Task {
-                            try await khAccess.sendEqToDevice()
-                        }
-                    }
                     .disabled(
                         khAccess.status == .sendingEqSettings
                             || khAccess.status == .speakersUnavailable)
@@ -65,6 +61,9 @@ struct ContentView: View {
                     StatusDisplay(status: khAccess.status)
                     Spacer()
                     SettingsLink()
+                }
+                .task {
+                    try? await khAccess.checkSpeakersAvailable()
                 }
             }
         }

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct Eq: Codable {
+struct Eq: Codable, Equatable {
     var boost: [Double]
     var enabled: [Bool]
     var frequency: [Double]

@@ -105,33 +105,48 @@ struct EqPanel: View {
     /// when switching EQs. I don't think I want that.
     @State private var selectedEqBand: [Int] = [0, 0]
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
             Picker("", selection: $selectedEq) {
                 Text("eq2").tag(0)
                 Text("eq3").tag(1)
             }
             .pickerStyle(.segmented)
-            
+
             EqBandPanel(
                 khAccess: khAccess,
                 selectedEq: selectedEq,
                 selectedEqBand: selectedEqBand[selectedEq]
             )
-            
-            .pickerStyle(.segmented)
-            Picker("", selection: $selectedEqBand[selectedEq]) {
-                ForEach((1...10), id: \.self) { i in
-                    Text("\(i)").tag(i - 1)
-                }
-            }
-            .pickerStyle(.segmented)
-            if selectedEq == 1 {
+
+            ZStack {
                 Picker("", selection: $selectedEqBand[selectedEq]) {
-                    ForEach((11...20), id: \.self) { i in
+                    ForEach((1...10), id: \.self) { i in
                         Text("\(i)").tag(i - 1)
                     }
                 }
                 .pickerStyle(.segmented)
+                .opacity(selectedEq == 0 ? 1 : 0)
+                VStack {
+                    Picker("", selection: $selectedEqBand[selectedEq]) {
+                        ForEach((1...10), id: \.self) { i in
+                            Text("\(i)").tag(i - 1)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Picker("", selection: $selectedEqBand[selectedEq]) {
+                        ForEach((11...20), id: \.self) { i in
+                            Text("\(i)").tag(i - 1)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                .opacity(selectedEq == 1 ? 1 : 0)
+            }
+
+            Button("Send EQ") {
+                Task {
+                    try await khAccess.send()
+                }
             }
         }
     }

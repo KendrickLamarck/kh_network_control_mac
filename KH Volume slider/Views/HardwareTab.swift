@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct UIView: View {
+struct HardwareTab: View {
     @Bindable var khAccess: KHAccess
 
     var body: some View {
@@ -18,7 +18,7 @@ struct UIView: View {
             } onEditingChanged: { editing in
                 if !editing {
                     Task {
-                        try await khAccess.sendLogoBrightness()
+                        try await khAccess.send()
                     }
                 }
             }
@@ -32,7 +32,7 @@ struct UIView: View {
             .frame(width: 80)
             .onSubmit {
                 Task {
-                    try await khAccess.sendLogoBrightness()
+                    try await khAccess.send()
                 }
             }
         }
