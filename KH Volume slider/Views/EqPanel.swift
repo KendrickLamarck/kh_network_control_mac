@@ -14,20 +14,39 @@ struct EqSlider: View {
     var range: ClosedRange<Double>
     var logarithmic: Bool
     var selectedEqBand: Int
+    var khAccess: KHAccess
 
     var body: some View {
         let unitString: String = unit != nil ? " (\(unit!))" : ""
         Text(name + unitString)
         if logarithmic {
-            Slider.withLog2Scale(value: binding[selectedEqBand], in: range)
+            Slider.withLog2Scale(value: binding[selectedEqBand], in: range) {editing in
+                if !editing {
+                    Task {
+                        try await khAccess.send()
+                    }
+                }
+            }
         } else {
-            Slider(value: binding[selectedEqBand], in: range)
+            Slider(value: binding[selectedEqBand], in: range) {editing in
+                if !editing {
+                    Task {
+                        try await khAccess.send()
+                    }
+                }
+            }
         }
         TextField(
             name,
             value: binding[selectedEqBand],
             format: .number.precision(.fractionLength(1))
-        ).frame(width: 80)
+        )
+        .frame(width: 80)
+        .onSubmit {
+            Task {
+                try await khAccess.send()
+            }
+        }
     }
 }
 
@@ -45,7 +64,8 @@ struct EqBandPanel: View {
                     unit: "Hz",
                     range: 10...24000,
                     logarithmic: true,
-                    selectedEqBand: selectedEqBand
+                    selectedEqBand: selectedEqBand,
+                    khAccess: khAccess
                 )
             }
             GridRow {
@@ -55,7 +75,8 @@ struct EqBandPanel: View {
                     unit: nil,
                     range: 0.1...16,
                     logarithmic: true,
-                    selectedEqBand: selectedEqBand
+                    selectedEqBand: selectedEqBand,
+                    khAccess: khAccess
                 )
             }
             GridRow {
@@ -65,7 +86,8 @@ struct EqBandPanel: View {
                     unit: "dB",
                     range: -99...24,
                     logarithmic: false,
-                    selectedEqBand: selectedEqBand
+                    selectedEqBand: selectedEqBand,
+                    khAccess: khAccess
                 )
             }
             GridRow {
@@ -75,7 +97,8 @@ struct EqBandPanel: View {
                     unit: "dB",
                     range: -99...24,
                     logarithmic: false,
-                    selectedEqBand: selectedEqBand
+                    selectedEqBand: selectedEqBand,
+                    khAccess: khAccess
                 )
             }
         }
@@ -87,10 +110,27 @@ struct EqBandPanel: View {
             }
             .pickerStyle(.menu)
             .frame(width: 160)
+            .onChange(of: khAccess.eqs[selectedEq].type) {
+                Task {
+                    try await khAccess.send()
+                }
+            }
+            .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
+            if khAccess.eqs[selectedEq].enabled[selectedEqBand] {
+                Text("Disable band to change type")
+            }
+
             Spacer()
+
             Toggle(
                 "Enable band", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand]
-            ).toggleStyle(.switch)
+            )
+            .toggleStyle(.switch)
+            .onChange(of: khAccess.eqs[selectedEq].enabled) {
+                Task {
+                    try await khAccess.send()
+                }
+            }
         }
     }
 }
@@ -141,12 +181,6 @@ struct EqPanel: View {
                     .pickerStyle(.segmented)
                 }
                 .opacity(selectedEq == 1 ? 1 : 0)
-            }
-
-            Button("Send EQ") {
-                Task {
-                    try await khAccess.send()
-                }
             }
         }
     }

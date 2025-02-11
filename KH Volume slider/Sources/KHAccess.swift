@@ -85,13 +85,14 @@ import SwiftUI
     private func sendSSCCommand(path: [String], value: Any, checkAvailable: Bool = true)
         async throws
     {
-        /// sends the command `{"p1":{"p2":{String(value)}}` to the device,
-        /// if `path=["p1", "p2"]`.
+        /// sends the command `{"p1":{"p2":{String(value)}}` to the device, if
+        /// `path=["p1", "p2"]`.
         var jsonPath = String(describing: value)
         for p in path.reversed() {
             jsonPath = "{\"\(p)\":\(jsonPath)}"
         }
         jsonPath = "'" + jsonPath + "'"
+        // print(jsonPath)
         try await runKHToolProcess(
             args: ["--expert", jsonPath], checkAvailable: checkAvailable)
     }
@@ -178,6 +179,37 @@ import SwiftUI
         status = .clean
     }
 
+    private func sendEqBoost(eqIdx: Int, eqName: String) async throws {
+        try await sendSSCCommand(
+            path: ["audio", "out", eqName, "boost"], value: eqs[eqIdx].boost)
+    }
+
+    private func sendEqEnabled(eqIdx: Int, eqName: String) async throws {
+        try await sendSSCCommand(
+            path: ["audio", "out", eqName, "enabled"], value: eqs[eqIdx].enabled)
+    }
+    
+    private func sendEqFrequency(eqIdx: Int, eqName: String) async throws {
+        try await sendSSCCommand(
+            path: ["audio", "out", eqName, "frequency"], value: eqs[eqIdx].frequency)
+    }
+    
+    private func sendEqGain(eqIdx: Int, eqName: String) async throws {
+        try await sendSSCCommand(
+            path: ["audio", "out", eqName, "gain"], value: eqs[eqIdx].gain)
+    }
+    
+    private func sendEqQ(eqIdx: Int, eqName: String) async throws {
+        try await sendSSCCommand(
+            path: ["audio", "out", eqName, "q"], value: eqs[eqIdx].q)
+    }
+
+    private func sendEqType(eqIdx: Int, eqName: String) async throws {
+        // TODO probably have to do more here
+        try await sendSSCCommand(
+            path: ["audio", "out", eqName, "type"], value: eqs[eqIdx].type)
+    }
+    
     private func sendMuteOrUnmute() async throws {
         if muted {
             try await runKHToolProcess(args: ["--mute"])
@@ -198,10 +230,6 @@ import SwiftUI
             try await sendVolumeToDevice()
             volumeDevice = volume
         }
-        if eqs != eqsDevice {
-            try await sendEqToDevice()
-            eqsDevice = eqs
-        }
         if muted != mutedDevice {
             try await sendMuteOrUnmute()
             mutedDevice = muted
@@ -209,6 +237,36 @@ import SwiftUI
         if logoBrightness != logoBrightnessDevice {
             try await sendLogoBrightness()
             logoBrightnessDevice = logoBrightness
+        }
+        for (eqIdx, eqName) in ["eq2", "eq3"].enumerated() {
+            if eqs[eqIdx].boost != eqsDevice[eqIdx].boost {
+                try await sendEqBoost(eqIdx: eqIdx, eqName: eqName)
+                eqsDevice[eqIdx].boost = eqs[eqIdx].boost
+            }
+            if eqs[eqIdx].enabled != eqsDevice[eqIdx].enabled {
+                try await sendEqEnabled(eqIdx: eqIdx, eqName: eqName)
+                eqsDevice[eqIdx].enabled = eqs[eqIdx].enabled
+            }
+            if eqs[eqIdx].frequency != eqsDevice[eqIdx].frequency {
+                try await sendEqFrequency(eqIdx: eqIdx, eqName: eqName)
+                eqsDevice[eqIdx].frequency = eqs[eqIdx].frequency
+            }
+            if eqs[eqIdx].gain != eqsDevice[eqIdx].gain {
+                try await sendEqGain(eqIdx: eqIdx, eqName: eqName)
+                eqsDevice[eqIdx].gain = eqs[eqIdx].gain
+            }
+            if eqs[eqIdx].q != eqsDevice[eqIdx].q {
+                try await sendEqQ(eqIdx: eqIdx, eqName: eqName)
+                eqsDevice[eqIdx].q = eqs[eqIdx].q
+            }
+            if eqs[eqIdx].type != eqsDevice[eqIdx].type {
+                try await sendEqType(eqIdx: eqIdx, eqName: eqName)
+                eqsDevice[eqIdx].type = eqs[eqIdx].type
+            }
+        }
+        if eqs != eqsDevice {
+            try await sendEqToDevice()
+            eqsDevice = eqs
         }
     }
 }

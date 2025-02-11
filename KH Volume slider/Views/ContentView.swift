@@ -18,7 +18,8 @@ struct ContentView: View {
                         .padding(.horizontal).padding(.bottom)
                 }
                 Tab("DSP", systemImage: "equal") {
-                    EqPanel(khAccess: khAccess).padding(.horizontal).padding(.bottom)
+                    EqPanel(khAccess: khAccess)
+                        .padding(.horizontal).padding(.bottom)
                 }
                 Tab("Hardware", systemImage: "paintpalette") {
                     HardwareTab(khAccess: khAccess)
@@ -26,7 +27,7 @@ struct ContentView: View {
                 }
             }
             .frame(minWidth: 450)
-            
+
             Divider()
 
             VStack {
@@ -45,7 +46,8 @@ struct ContentView: View {
                     }
                     .disabled(
                         khAccess.status == .fetching
-                            || khAccess.status == .speakersUnavailable)
+                            || khAccess.status == .speakersUnavailable
+                    )
                     .disabled(
                         khAccess.status == .sendingEqSettings
                             || khAccess.status == .speakersUnavailable)

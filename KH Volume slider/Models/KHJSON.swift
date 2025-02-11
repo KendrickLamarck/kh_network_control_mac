@@ -14,7 +14,7 @@ struct Eq: Codable, Equatable {
     var gain: [Double]
     var q: [Double]
     var type: [String]
-    
+
     init(numBands: Int) {
         boost = Array(repeating: 0.0, count: numBands)
         enabled = Array(repeating: false, count: numBands)
