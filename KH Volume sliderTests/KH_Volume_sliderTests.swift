@@ -13,9 +13,8 @@ struct KH_Volume_sliderTests_Online {
     @Test func testSendToDevice() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.
         let khAccess = KHAccess()
-        try await khAccess.sendVolumeToDevice()
-        try await khAccess.sendEqToDevice()
-        try await khAccess.backupDevice()
+        try await khAccess.backupAndFetch()
+        try await khAccess.send()
     }
 }
 

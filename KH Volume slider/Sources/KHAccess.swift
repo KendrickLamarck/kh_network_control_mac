@@ -32,7 +32,6 @@ import SwiftUI
     enum Status {
         case clean
         case fetching
-        case sendingEqSettings
         case checkingSpeakerAvailability
         case speakersUnavailable
     }
@@ -40,9 +39,10 @@ import SwiftUI
     enum KHAccessError: Error {
         case processError
         case speakersNotReachable
-        case invalidCommand
         case fileError
         case jsonError
+        case messageNotUnderstood
+        case addressNotFound
     }
 
     let khtoolPath = Bundle.main.url(forResource: "khtool", withExtension: "py")!
@@ -73,10 +73,21 @@ import SwiftUI
             "\"\(pythonExecutable)\" \"\(khtoolPath.path)\" -i \(networkInterface)"
                 + argString,
         ]
+        let stdOut = Pipe()
+        process.standardOutput = stdOut
         try process.run()
         process.waitUntilExit()
-        // TODO check for malformed commands / 404 paths and throw the appropriate
-        // error
+        let stdOutString = try String(
+            data: stdOut.fileHandleForReading.readToEnd()!, encoding: .utf8)
+        let lastLine = stdOutString!.split(separator: "\n").last!
+        if lastLine.starts(with: "{\"osc\":{\"error\"") {
+            if lastLine.contains("404") {
+                throw KHAccessError.addressNotFound
+            }
+            if lastLine.contains("400") {
+                throw KHAccessError.messageNotUnderstood
+            }
+        }
         if process.terminationStatus != 0 {
             throw KHAccessError.processError
         }
@@ -102,9 +113,10 @@ import SwiftUI
         do {
             try await sendSSCCommand(path: ["osc", "ping"], value: 0)
             status = .clean
-        } catch {
+        } catch KHAccessError.processError {
             status = .speakersUnavailable
-            throw KHAccessError.speakersNotReachable
+            /// I don't think we should throw here because the function is running as intended...
+            // throw KHAccessError.speakersNotReachable
         }
     }
 
@@ -158,17 +170,17 @@ import SwiftUI
         try await sendSSCCommand(
             path: ["audio", "out", eqName, "enabled"], value: eqs[eqIdx].enabled)
     }
-    
+
     private func sendEqFrequency(eqIdx: Int, eqName: String) async throws {
         try await sendSSCCommand(
             path: ["audio", "out", eqName, "frequency"], value: eqs[eqIdx].frequency)
     }
-    
+
     private func sendEqGain(eqIdx: Int, eqName: String) async throws {
         try await sendSSCCommand(
             path: ["audio", "out", eqName, "gain"], value: eqs[eqIdx].gain)
     }
-    
+
     private func sendEqQ(eqIdx: Int, eqName: String) async throws {
         try await sendSSCCommand(
             path: ["audio", "out", eqName, "q"], value: eqs[eqIdx].q)
@@ -176,10 +188,11 @@ import SwiftUI
 
     private func sendEqType(eqIdx: Int, eqName: String) async throws {
         // TODO probably have to do more here
+        // nope it just works
         try await sendSSCCommand(
             path: ["audio", "out", eqName, "type"], value: eqs[eqIdx].type)
     }
-    
+
     private func sendMuteOrUnmute() async throws {
         if muted {
             try await runKHToolProcess(args: ["--mute"])

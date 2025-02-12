@@ -16,14 +16,17 @@ struct ContentView: View {
                 Tab("Volume", systemImage: "speaker.wave.3") {
                     VolumeTab(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
+                        .disabled(khAccess.status != .clean)
                 }
                 Tab("DSP", systemImage: "equal") {
                     EqPanel(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
+                        .disabled(khAccess.status != .clean)
                 }
                 Tab("Hardware", systemImage: "paintpalette") {
                     HardwareTab(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
+                        .disabled(khAccess.status != .clean)
                 }
             }
             .frame(minWidth: 450)
@@ -48,9 +51,6 @@ struct ContentView: View {
                         khAccess.status == .fetching
                             || khAccess.status == .speakersUnavailable
                     )
-                    .disabled(
-                        khAccess.status == .sendingEqSettings
-                            || khAccess.status == .speakersUnavailable)
 
                     Spacer()
 

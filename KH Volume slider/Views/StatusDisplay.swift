@@ -18,8 +18,6 @@ struct StatusDisplay: View {
                     Image(systemName: "circle.fill").foregroundColor(.green)
                 case .fetching:
                     ProgressView().scaleEffect(0.5)
-                case .sendingEqSettings:
-                    ProgressView().scaleEffect(0.5)
                 case .checkingSpeakerAvailability:
                     ProgressView().scaleEffect(0.5)
                 case .speakersUnavailable:
@@ -33,8 +31,6 @@ struct StatusDisplay: View {
                 Text("Speakers unavailable")
             case .checkingSpeakerAvailability:
                 Text("Checking speaker availability...")
-            case .sendingEqSettings:
-                Text("Sending EQ settings...")
             case .fetching:
                 Text("Fetching...")
             case .clean:
