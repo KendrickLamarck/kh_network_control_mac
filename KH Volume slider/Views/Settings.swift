@@ -12,15 +12,52 @@ struct SettingsView: View {
     @AppStorage("networkInterface") private var networkInterface = "en0"
 
     public var body: some View {
-        Form {
-            TextField(
-                "Python executable",
-                text: $pythonExecutable
-            )
-            TextField(
-                "Network interface",
-                text: $networkInterface
-            )
+        VStack {
+            Form {
+                TextField(
+                    "Python executable",
+                    text: $pythonExecutable
+                )
+                TextField(
+                    "Network interface",
+                    text: $networkInterface
+                )
+            }
+
+            Divider()
+
+            Button("Delete cached device information") {
+                let khtoolJsonPath = Bundle.main.url(
+                    forResource: "khtool", withExtension: "json")
+                let khtoolCommandsPath = Bundle.main.url(
+                    forResource: "khtool_commands", withExtension: "json")
+                let guiBackupPath = Bundle.main.url(
+                    forResource: "gui_backup", withExtension: "json")
+                let guiEqSettingsPath = Bundle.main.url(
+                    forResource: "gui_eq_settings", withExtension: "json")
+                [khtoolJsonPath, khtoolCommandsPath].forEach { t in
+                    guard t == nil else {
+                        do {
+                            try FileManager.default.removeItem(at: t!)
+                        } catch {
+                            print(
+                                "file \(String(describing: t)) could not be found or deleted."
+                            )
+                        }
+                        return
+                    }
+                }
+                [guiBackupPath, guiEqSettingsPath].forEach { t in
+                    guard t == nil else {
+                        do {
+                            try "".write(to: t!, atomically: true, encoding: .utf8)
+                        } catch {
+                            print("file \(String(describing: t)) could not be cleared.")
+                        }
+                        return
+                    }
+                }
+            }
         }
         .scenePadding()
         .frame(width: 350)

@@ -117,7 +117,8 @@ struct EqBandPanel: View {
             }
             .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
             if khAccess.eqs[selectedEq].enabled[selectedEqBand] {
-                Text("Disable band to change type")
+                Text("Disable to change type")
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()

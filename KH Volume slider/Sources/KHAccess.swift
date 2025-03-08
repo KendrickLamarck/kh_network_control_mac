@@ -96,14 +96,13 @@ import SwiftUI
     private func sendSSCCommand(path: [String], value: Any, checkAvailable: Bool = true)
         async throws
     {
-        /// sends the command `{"p1":{"p2":{String(value)}}` to the device, if
+        /// sends the command `{"p1":{"p2":{String(describing: value)}}` to the device, if
         /// `path=["p1", "p2"]`.
         var jsonPath = String(describing: value)
         for p in path.reversed() {
             jsonPath = "{\"\(p)\":\(jsonPath)}"
         }
         jsonPath = "'" + jsonPath + "'"
-        // print(jsonPath)
         try await runKHToolProcess(
             args: ["--expert", jsonPath], checkAvailable: checkAvailable)
     }
@@ -115,8 +114,6 @@ import SwiftUI
             status = .clean
         } catch KHAccessError.processError {
             status = .speakersUnavailable
-            /// I don't think we should throw here because the function is running as intended...
-            // throw KHAccessError.speakersNotReachable
         }
     }
 

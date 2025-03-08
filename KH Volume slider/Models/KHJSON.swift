@@ -63,12 +63,36 @@ struct Commands: Codable {
             }
         }
     }
+
+    var device: Device
     
+    struct Device: Codable {
+        var name: String
+        var identity: Identity
+        
+        struct Identity: Codable {
+            let product: String
+            let serial: String
+            let vendor: String
+            let version: String
+        }
+        
+        var standby: Standby
+        
+        struct Standby: Codable {
+            var enabled: Bool
+            var auto_standby_time: Int
+            var level: Int
+            let countdown: Int
+
+        }
+    }
+
     var ui: UI
-    
+
     struct UI: Codable {
         var logo: Logo
-        
+
         struct Logo: Codable {
             var brightness: Double
         }
