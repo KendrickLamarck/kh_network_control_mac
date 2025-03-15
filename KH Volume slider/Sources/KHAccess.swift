@@ -34,6 +34,8 @@ import SwiftUI
         case fetching
         case checkingSpeakerAvailability
         case speakersUnavailable
+        case scanning
+        case noSpeakersFoundDuringScan
     }
 
     enum KHAccessError: Error {
@@ -77,8 +79,14 @@ import SwiftUI
         process.standardOutput = stdOut
         try process.run()
         process.waitUntilExit()
-        let stdOutString = try String(
-            data: stdOut.fileHandleForReading.readToEnd()!, encoding: .utf8)
+        if process.terminationStatus != 0 {
+            throw KHAccessError.processError
+        }
+        guard let stdOutData = try stdOut.fileHandleForReading.readToEnd() else {
+            // no output
+            return
+        }
+        let stdOutString = String(data: stdOutData, encoding: .utf8)
         let lastLine = stdOutString!.split(separator: "\n").last!
         if lastLine.starts(with: "{\"osc\":{\"error\"") {
             if lastLine.contains("404") {
@@ -87,9 +95,6 @@ import SwiftUI
             if lastLine.contains("400") {
                 throw KHAccessError.messageNotUnderstood
             }
-        }
-        if process.terminationStatus != 0 {
-            throw KHAccessError.processError
         }
     }
 
@@ -108,12 +113,44 @@ import SwiftUI
     }
 
     func checkSpeakersAvailable() async throws {
-        status = .checkingSpeakerAvailability
-        do {
-            try await sendSSCCommand(path: ["osc", "ping"], value: 0)
+        guard let khtoolJsonURL = Bundle.main.url(
+            forResource: "khtool", withExtension: "json")
+        else {
+            print("khtool.json does not exist. This should not happen.")
+            throw KHAccessError.fileError
+        }
+        let data = try Data(contentsOf: khtoolJsonURL)
+        let deviceDict = try JSONDecoder().decode([String: String].self, from: data)
+        // If we don't do this, khtool.py will just do nothing.
+        if deviceDict.isEmpty {
+            status = .scanning
+            try await runKHToolProcess(args: ["--scan"], checkAvailable: false)
+            guard let khtoolJsonURL = Bundle.main.url(
+                forResource: "khtool", withExtension: "json")
+            else {
+                print("Scan did not produce khtool.json. This should not happen.")
+                status = .noSpeakersFoundDuringScan
+                throw KHAccessError.fileError
+            }
+            let data = try Data(contentsOf: khtoolJsonURL)
+            let deviceDict = try JSONDecoder().decode(
+                [String: String].self, from: data)
+            if deviceDict.isEmpty {
+                status = .noSpeakersFoundDuringScan
+            } else {
+                status = .clean
+                try await backupAndFetch()
+            }
+        } else {
+            status = .checkingSpeakerAvailability
+            do {
+                try await sendSSCCommand(path: ["osc", "ping"], value: 0, checkAvailable: false)
+            } catch KHAccessError.processError {
+                // this happens only when "device is not online", not when 0 devices are
+                // found during scan.
+                status = .speakersUnavailable
+            }
             status = .clean
-        } catch KHAccessError.processError {
-            status = .speakersUnavailable
         }
     }
 

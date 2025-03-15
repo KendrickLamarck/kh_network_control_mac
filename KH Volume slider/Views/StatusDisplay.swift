@@ -22,19 +22,27 @@ struct StatusDisplay: View {
                     ProgressView().scaleEffect(0.5)
                 case .speakersUnavailable:
                     Image(systemName: "circle.fill").foregroundColor(.red)
+                case .scanning:
+                    ProgressView().scaleEffect(0.5)
+                case .noSpeakersFoundDuringScan:
+                    Image(systemName: "circle.fill").foregroundColor(.red)
                 }
             }
             .frame(height: 20)
             .frame(minWidth: 33)
             switch status {
+            case .clean:
+                EmptyView()
             case .speakersUnavailable:
                 Text("Speakers unavailable")
             case .checkingSpeakerAvailability:
                 Text("Checking speaker availability...")
             case .fetching:
                 Text("Fetching...")
-            case .clean:
-                EmptyView()
+            case .scanning:
+                Text("Scanning...")
+            case .noSpeakersFoundDuringScan:
+                Text("No speakers found during scan")
             }
         }
     }
