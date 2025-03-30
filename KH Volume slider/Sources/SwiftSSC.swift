@@ -7,17 +7,28 @@
 import Foundation
 import Network
 
+
+class SSCTransaction {
+    var TX: String = ""
+    var RX: String = ""
+    var error: String = ""
+}
+
+
 struct SSCDevice {
     let ip: String
     let port: Int
     private let connection: NWConnection
     private let dispatchQueue: DispatchQueue
-    
+    let transaction = SSCTransaction()
+
     enum SSCDeviceError: Error {
         case ipError
         case portError
+        case sendError
+        case receiveError
     }
-    
+
     init(ip ip_: String, port port_: Int = 45) throws {
         ip = ip_
         port = port_
@@ -31,34 +42,36 @@ struct SSCDevice {
         connection = NWConnection(host: hostEndpoint, port: portEndpoint, using: .tcp)
         dispatchQueue = DispatchQueue(label: "KH")
     }
-    
+
     func connect() {
         connection.start(queue: dispatchQueue)
     }
-    
+
+    func disconnect() {
+        connection.cancel()
+    }
+
     func sendMessage(_ TXString: String) {
         let sendCompHandler = NWConnection.SendCompletion.contentProcessed {
             error in
-            if error != nil {
-                print("Error sending: \(String(describing: error))")
+            if let error = error {
+                transaction.error = String(describing: error)
+                return
             }
+            transaction.TX = TXString
         }
         let TX = TXString.appending("\r\n").data(using: .ascii)!
         connection.send(content: TX, completion: sendCompHandler)
     }
-    
-    func receiveMessage() {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 512) {
+
+    func receiveMessage(maximumLength: Int = 512) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: maximumLength) {
             (content, context, isComplete, error) in
-            print("Response:")
-            if content == nil {
-                print("No response")
+            guard let content = content else {
+                transaction.error = String(describing: error)
                 return
             }
-            print(String(data: content!, encoding: .utf8) ?? "NONE")
+            transaction.RX = String(data: content, encoding: .utf8) ?? "No Response"
         }
-        // there must be a better way
-        sleep(1)
-        connection.cancel()
     }
 }
