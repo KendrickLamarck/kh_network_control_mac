@@ -60,12 +60,10 @@ struct SSCDevice {
             }
             transaction.TX = TXString
         }
-        let TX = TXString.appending("\r\n").data(using: .ascii)!
-        connection.send(content: TX, completion: sendCompHandler)
-    }
+        let TXraw = TXString.appending("\r\n").data(using: .ascii)!
+        connection.send(content: TXraw, completion: sendCompHandler)
 
-    func receiveMessage(maximumLength: Int = 512) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: maximumLength) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 512) {
             (content, context, isComplete, error) in
             guard let content = content else {
                 transaction.error = String(describing: error)
