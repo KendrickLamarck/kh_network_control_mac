@@ -62,34 +62,3 @@ struct SSCDevice {
         connection.cancel()
     }
 }
-
-func sendSSCMessage(_ TXString: String) throws {
-    print("Sending Message:")
-    print(TXString)
-    let addr = IPv6Address("2003:c1:df03:a100:2a36:38ff:fe61:7506")!
-    let TX = TXString.appending("\r\n").data(using: .ascii)!
-    let host = NWEndpoint.Host.ipv6(addr)
-    let port = NWEndpoint.Port(rawValue: 45)!
-    let c = NWConnection(host: host, port: port, using: .tcp)
-    let q = DispatchQueue(label: "KH")
-    c.start(queue: q)
-    let compHandler = NWConnection.SendCompletion.contentProcessed {
-        error in
-        if error != nil {
-            print("Error sending: \(String(describing: error))")
-        }
-    }
-    c.send(content: TX, completion: compHandler)
-    c.receive(minimumIncompleteLength: 1, maximumLength: 512) {
-        (content, context, isComplete, error) in
-        print("Response:")
-        if content == nil {
-            print("No response")
-            return
-        }
-        print(String(data: content!, encoding: .utf8) ?? "NONE")
-    }
-    // there must be a better way
-    sleep(1)
-    c.cancel()
-}
