@@ -43,10 +43,10 @@ struct Eq: Codable, Equatable {
 
 struct Commands: Codable {
     var audio: Audio
-    
+
     struct Audio: Codable {
         var out: Outparams
-        
+
         struct Outparams: Codable {
             var level: Double
             var mute: Bool

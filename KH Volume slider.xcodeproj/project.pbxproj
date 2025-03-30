@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C54AAE192D959C2200A11B2C /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C54AAE182D959C2200A11B2C /* Network.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C50DCA712D17309A00780112 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -28,6 +32,7 @@
 		C50DCA5F2D17309900780112 /* KH Volume slider.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "KH Volume slider.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C50DCA702D17309A00780112 /* KH Volume sliderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KH Volume sliderTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C50DCA7A2D17309A00780112 /* KH Volume sliderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KH Volume sliderUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C54AAE182D959C2200A11B2C /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -73,6 +78,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C54AAE192D959C2200A11B2C /* Network.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +107,7 @@
 				C50DCA7D2D17309A00780112 /* KH Volume sliderUITests */,
 				C50DCA602D17309900780112 /* Products */,
 				C50171612D40447300EE0261 /* README.md */,
+				C54AAE172D959C2200A11B2C /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -112,6 +119,14 @@
 				C50DCA7A2D17309A00780112 /* KH Volume sliderUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C54AAE172D959C2200A11B2C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C54AAE182D959C2200A11B2C /* Network.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

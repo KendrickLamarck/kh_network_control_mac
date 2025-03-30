@@ -24,3 +24,20 @@ struct KH_Volume_sliderTests_Offline {
         #expect(true)
     }
 }
+
+
+struct SSCTest {
+    @Test func testSendMessage() throws {
+        let TX = "{\"audio\":{\"out\":{\"mute\":false}}}"
+        try sendSSCMessage(TX)
+    }
+    
+    @Test func testSSCDevice() {
+        let TX = "{\"audio\":{\"out\":{\"mute\":false}}}"
+        let ip = "2003:c1:df03:a100:2a36:38ff:fe61:7506"
+        let sscDevice = SSCDevice(ip: ip)
+        sscDevice.connect()
+        sscDevice.sendMessage(TX)
+        sscDevice.receiveMessage()
+    }
+}
