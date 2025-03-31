@@ -14,8 +14,6 @@ class SSCTransaction {
 }
 
 struct SSCDevice {
-    let ip: String
-    let port: Int
     private let connection: NWConnection
     private let dispatchQueue: DispatchQueue
 
@@ -26,9 +24,7 @@ struct SSCDevice {
         case receiveError
     }
 
-    init?(ip ip_: String, port port_: Int = 45) {
-        ip = ip_
-        port = port_
+    init?(ip: String, port: Int = 45) {
         guard let addr = IPv6Address(ip) else {
             return nil
         }
@@ -36,25 +32,28 @@ struct SSCDevice {
         guard let portEndpoint = NWEndpoint.Port(String(port)) else {
             return nil
         }
-        connection = NWConnection(host: hostEndpoint, port: portEndpoint, using: .tcp)
+        let endpoint = NWEndpoint.hostPort(host: hostEndpoint, port: portEndpoint)
+        connection = NWConnection(to: endpoint, using: .tcp)
         dispatchQueue = DispatchQueue(label: "KH Speaker connection")
     }
 
-    static func scan() -> [[String: String]] {
-        var retval: [[String: String]] = []
+    init(endpoint: NWEndpoint) {
+        connection = NWConnection(to: endpoint, using: .tcp)
+        dispatchQueue = DispatchQueue(label: "KH Speaker connection")
+    }
+
+    static func scan(scanTime: UInt32 = 1) -> [NWEndpoint] {
+        var retval: [NWEndpoint] = []
         let q = DispatchQueue(label: "KH Discovery")
         let browser = NWBrowser(
             for: .bonjour(type: "_ssc._tcp", domain: nil), using: .tcp)
         browser.browseResultsChangedHandler = { (results, changes) in
             for result in results {
-                if case .service(let service) = result.endpoint {
-                    print(service.name)
-                    retval.append([service.name: "IP goes here"])
-                }
+                retval.append(result.endpoint)
             }
         }
         browser.start(queue: q)
-        sleep(1)  // come on
+        sleep(scanTime)
         return retval
     }
 
