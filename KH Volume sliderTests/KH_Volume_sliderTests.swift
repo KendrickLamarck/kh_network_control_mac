@@ -25,23 +25,28 @@ struct KH_Volume_sliderTests_Offline {
 }
 
 struct SSCTest {
-    @Test func testSSCDevice() throws {
+    @Test func testSSCDevice() {
         let ip = "2003:c1:df03:a100:2a36:38ff:fe61:7506"
-        let sscDevice = try SSCDevice(ip: ip)
-        #expect(sscDevice.transaction.TX == "")
-        #expect(sscDevice.transaction.RX == "")
+        guard let sscDevice = SSCDevice(ip: ip) else {
+            #expect(Bool(false))
+            return
+        }
         sscDevice.connect()
         
         let TX1 = "{\"audio\":{\"out\":{\"mute\":true}}}"
-        sscDevice.sendMessage(TX1)
+        let t1 = sscDevice.sendMessage(TX1)
         sleep(1)
-        #expect(sscDevice.transaction.TX == TX1)
-        #expect(sscDevice.transaction.RX.starts(with: TX1))
+        #expect(t1.TX == TX1)
+        #expect(t1.RX.starts(with: TX1))
         
         let TX2 = "{\"audio\":{\"out\":{\"mute\":false}}}"
-        sscDevice.sendMessage(TX2)
+        let t2 = sscDevice.sendMessage(TX2)
         sleep(1)
-        #expect(sscDevice.transaction.TX == TX2)
-        #expect(sscDevice.transaction.RX.starts(with: TX2))
+        #expect(t2.TX == TX2)
+        #expect(t2.RX.starts(with: TX2))
+    }
+    
+    @Test func testScan() {
+        print(SSCDevice.scan())
     }
 }
