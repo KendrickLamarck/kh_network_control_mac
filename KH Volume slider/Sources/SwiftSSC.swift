@@ -14,7 +14,7 @@ class SSCTransaction {
 }
 
 struct SSCDevice {
-    private let connection: NWConnection
+    let connection: NWConnection
     private let dispatchQueue: DispatchQueue
 
     enum SSCDeviceError: Error {
@@ -42,14 +42,14 @@ struct SSCDevice {
         dispatchQueue = DispatchQueue(label: "KH Speaker connection")
     }
 
-    static func scan(scanTime: UInt32 = 1) -> [NWEndpoint] {
-        var retval: [NWEndpoint] = []
+    static func scan(scanTime: UInt32 = 1) -> [SSCDevice] {
+        var retval: [SSCDevice] = []
         let q = DispatchQueue(label: "KH Discovery")
         let browser = NWBrowser(
             for: .bonjour(type: "_ssc._tcp", domain: nil), using: .tcp)
         browser.browseResultsChangedHandler = { (results, changes) in
             for result in results {
-                retval.append(result.endpoint)
+                retval.append(SSCDevice(endpoint: (result.endpoint)))
             }
         }
         browser.start(queue: q)

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-@Observable class KHAccess {
+@Observable class KHAccessPython {
     /*
      Fetches, sends and stores data from speakers.
      */
@@ -139,7 +139,7 @@ import SwiftUI
                 status = .noSpeakersFoundDuringScan
             } else {
                 status = .clean
-                try await backupAndFetch()
+                try await fetch()
             }
         } else {
             status = .checkingSpeakerAvailability
@@ -184,7 +184,7 @@ import SwiftUI
         logoBrightness = logoBrightnessDevice
     }
 
-    func backupAndFetch() async throws {
+    func fetch() async throws {
         status = .fetching
         try await backupDevice()
         try readStateFromBackup()

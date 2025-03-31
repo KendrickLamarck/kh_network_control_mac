@@ -44,7 +44,7 @@ struct ContentView: View {
 
                     Button("Fetch") {
                         Task {
-                            try await khAccess.backupAndFetch()
+                            try await khAccess.fetch()
                         }
                     }
                     .disabled(

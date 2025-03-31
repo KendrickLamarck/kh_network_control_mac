@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-@Observable class KHAccessNative {
+@Observable class KHAccess {
     /*
      Fetches, sends and stores data from speakers.
      */
@@ -20,19 +20,23 @@ import SwiftUI
     var muted = false
     var logoBrightness = 100.0
 
-    var status: Status = .clean
-
     // (last known) device state. We compare UI state against this to selectively send
     // changed values to the device.
     private var volumeDevice = 54.0
     private var eqsDevice = [Eq(numBands: 10), Eq(numBands: 20)]
     private var mutedDevice = false
     private var logoBrightnessDevice = 100.0
-    
-    var device: SSCDevice
-    
-    init(device device_: SSCDevice) {
-        device = device_
+
+    var status: Status = .clean
+    var devices: [SSCDevice]
+
+    init(devices devices_: [SSCDevice]? = nil) {
+        if let devices_ = devices_ {
+            devices = devices_
+            return
+        } else {
+            devices = SSCDevice.scan()
+        }
     }
 
     enum Status {
@@ -52,15 +56,29 @@ import SwiftUI
         case messageNotUnderstood
         case addressNotFound
     }
-    
-    private func runKHToolProcess(args: [String], checkAvailable: Bool = true)
-        async throws
+
+    static func pathToJSONString<T>(path: [String], value: T) throws -> String
+    where T: Encodable {
+        let jsonData = try JSONEncoder().encode(value)
+        var jsonPath = String(data: jsonData, encoding: .utf8)!
+        for p in path.reversed() {
+            jsonPath = "{\"\(p)\":\(jsonPath)}"
+        }
+        return jsonPath
+    }
+
+    private func sendSSCCommand(command: String, checkAvailable: Bool = true)
+        throws -> SSCTransaction
     {
         if checkAvailable && status == .speakersUnavailable {
             throw KHAccessError.speakersNotReachable
         }
-        // TODO send command
-        let RX = ""
+        let transactions = devices.map { d in d.sendMessage(command) }
+        sleep(1)
+        let RX = transactions[0].RX
+        if RX.isEmpty {
+            print("RX was empty (should not happen)")
+        }
         if RX.starts(with: "{\"osc\":{\"error\"") {
             if RX.contains("404") {
                 throw KHAccessError.addressNotFound
@@ -69,148 +87,109 @@ import SwiftUI
                 throw KHAccessError.messageNotUnderstood
             }
         }
+        return transactions[0]
     }
 
-    private func sendSSCCommand(path: [String], value: Any, checkAvailable: Bool = true)
-        async throws
+    func sendSSCValue<T>(path: [String], value: T, checkAvailable: Bool = true)
+        throws where T: Encodable
     {
-        /// sends the command `{"p1":{"p2":{String(describing: value)}}` to the device, if
-        /// `path=["p1", "p2"]`.
-        var jsonPath = String(describing: value)
-        for p in path.reversed() {
-            jsonPath = "{\"\(p)\":\(jsonPath)}"
+        /// sends the command `{"p1":{"p2":value}}` to the device, if `path=["p1", "p2"]`.
+        let jsonPath = try KHAccess.pathToJSONString(path: path, value: value)
+        try _ = sendSSCCommand(
+            command: jsonPath, checkAvailable: checkAvailable)
+    }
+
+    func fetchSSCValue<T>(path: [String], checkAvailable: Bool = true) throws -> T
+    where T: Decodable {
+        let jsonPath = try KHAccess.pathToJSONString(path: path, value: nil as Float?)
+        let transaction = try sendSSCCommand(
+            command: jsonPath, checkAvailable: checkAvailable)
+        let RX = transaction.RX
+        let asObj = try JSONDecoder().decode(
+            [String: [String: [String: T]]].self, from: RX.data(using: .utf8)!)
+        let lastKey = path.last!
+        var result: [String: Any] = asObj
+        for p in path.dropLast() {
+            result = result[p] as! [String: Any]
         }
-        jsonPath = "'" + jsonPath + "'"
-        let _ = device.sendMessage(jsonPath)
+        return result[lastKey] as! T
     }
 
     func checkSpeakersAvailable() async throws {
-        guard let khtoolJsonURL = Bundle.main.url(
-            forResource: "khtool", withExtension: "json")
-        else {
-            print("khtool.json does not exist. This should not happen.")
-            throw KHAccessError.fileError
-        }
-        let data = try Data(contentsOf: khtoolJsonURL)
-        let deviceDict = try JSONDecoder().decode([String: String].self, from: data)
-        // If we don't do this, khtool.py will just do nothing.
-        if deviceDict.isEmpty {
+        status = .checkingSpeakerAvailability
+        if devices.isEmpty {
             status = .scanning
-            try await runKHToolProcess(args: ["--scan"], checkAvailable: false)
-            guard let khtoolJsonURL = Bundle.main.url(
-                forResource: "khtool", withExtension: "json")
-            else {
-                print("Scan did not produce khtool.json. This should not happen.")
-                status = .noSpeakersFoundDuringScan
-                throw KHAccessError.fileError
-            }
-            let data = try Data(contentsOf: khtoolJsonURL)
-            let deviceDict = try JSONDecoder().decode(
-                [String: String].self, from: data)
-            if deviceDict.isEmpty {
+            devices = SSCDevice.scan()
+            if devices.isEmpty {
                 status = .noSpeakersFoundDuringScan
             } else {
                 status = .clean
-                try await backupAndFetch()
+                try await fetch()
             }
-        } else {
-            status = .checkingSpeakerAvailability
-            do {
-                try await sendSSCCommand(path: ["osc", "ping"], value: 0, checkAvailable: false)
-            } catch KHAccessError.processError {
-                // this happens only when "device is not online", not when 0 devices are
-                // found during scan.
-                status = .speakersUnavailable
-            }
+        }
+        devices
+            .filter({ d in d.connection.state != .ready })
+            .forEach({ d in d.connect() })
+        sleep(2)
+        if devices.allSatisfy({ d in d.connection.state == .ready }) {
             status = .clean
+            return
+        } else {
+            status = .speakersUnavailable
+            throw KHAccessError.speakersNotReachable
         }
     }
 
-    private func backupDevice() async throws {
-        let backupPath = Bundle.main.path(forResource: "gui_backup", ofType: "json")!
-        try await runKHToolProcess(args: ["--backup", "\"" + backupPath + "\""])
-    }
-
-    private func readBackupAsStruct() throws -> KHJSON {
-        let backupURL = Bundle.main.url(
-            forResource: "gui_backup", withExtension: "json"
-        )!
-        let data = try Data(contentsOf: backupURL)
-        return try JSONDecoder().decode(KHJSON.self, from: data)
-    }
-
-    private func readStateFromBackup() throws {
-        let json = try readBackupAsStruct()
-        guard let commands = json.devices.values.first?.commands else {
-            throw KHAccessError.jsonError
-        }
-        mutedDevice = commands.audio.out.mute
-        volumeDevice = commands.audio.out.level
-        eqsDevice[0] = commands.audio.out.eq2
-        eqsDevice[1] = commands.audio.out.eq3
-        logoBrightnessDevice = commands.ui.logo.brightness
-
-        muted = mutedDevice
-        volume = volumeDevice
-        eqs = eqsDevice
-        logoBrightness = logoBrightnessDevice
-    }
-
-    func backupAndFetch() async throws {
+    func fetch() async throws {
         status = .fetching
-        try await backupDevice()
-        try readStateFromBackup()
+        volume = try fetchSSCValue(path: ["audio", "out", "level"])
+        muted = try fetchSSCValue(path: ["audio", "out", "mute"])
         status = .clean
     }
 
     private func sendVolumeToDevice() async throws {
-        try await runKHToolProcess(args: ["--level", "\(Int(volume))"])
+        //try await runKHToolProcess(args: ["--level", "\(Int(volume))"])
+        try sendSSCValue(path: ["audio", "out", "level"], value: Int(volume))
     }
 
     private func sendEqBoost(eqIdx: Int, eqName: String) async throws {
-        try await sendSSCCommand(
+        try sendSSCValue(
             path: ["audio", "out", eqName, "boost"], value: eqs[eqIdx].boost)
     }
 
     private func sendEqEnabled(eqIdx: Int, eqName: String) async throws {
-        try await sendSSCCommand(
+        try sendSSCValue(
             path: ["audio", "out", eqName, "enabled"], value: eqs[eqIdx].enabled)
     }
 
     private func sendEqFrequency(eqIdx: Int, eqName: String) async throws {
-        try await sendSSCCommand(
+        try sendSSCValue(
             path: ["audio", "out", eqName, "frequency"], value: eqs[eqIdx].frequency)
     }
 
     private func sendEqGain(eqIdx: Int, eqName: String) async throws {
-        try await sendSSCCommand(
+        try sendSSCValue(
             path: ["audio", "out", eqName, "gain"], value: eqs[eqIdx].gain)
     }
 
     private func sendEqQ(eqIdx: Int, eqName: String) async throws {
-        try await sendSSCCommand(
+        try sendSSCValue(
             path: ["audio", "out", eqName, "q"], value: eqs[eqIdx].q)
     }
 
     private func sendEqType(eqIdx: Int, eqName: String) async throws {
-        // TODO probably have to do more here
-        // nope it just works
-        try await sendSSCCommand(
+        try sendSSCValue(
             path: ["audio", "out", eqName, "type"], value: eqs[eqIdx].type)
     }
 
     private func sendMuteOrUnmute() async throws {
-        if muted {
-            try await runKHToolProcess(args: ["--mute"])
-        } else {
-            try await runKHToolProcess(args: ["--unmute"])
-        }
+        try sendSSCValue(path: ["audio", "out", "mute"], value: muted)
     }
 
     private func sendLogoBrightness() async throws {
         /// We don't want to use the `--brightness` option because it can't take floats (although we don't either)
         /// and it only goes up to 100 even though the real brightness goes up to 125.
-        try await sendSSCCommand(
+        try sendSSCValue(
             path: ["ui", "logo", "brightness"], value: logoBrightness)
     }
 

@@ -13,7 +13,7 @@ struct KH_Volume_sliderTests_Online {
     @Test func testSendToDevice() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.
         let khAccess = KHAccess()
-        try await khAccess.backupAndFetch()
+        try await khAccess.fetch()
         try await khAccess.send()
     }
 }
@@ -24,7 +24,7 @@ struct KH_Volume_sliderTests_Offline {
     }
 }
 
-struct SSCTest {
+struct TestSSC {
     @Test func testSendMessage() {
         let ip = "2003:c1:df03:a100:2a36:38ff:fe61:7506"
         guard let sscDevice = SSCDevice(ip: ip) else {
@@ -32,7 +32,7 @@ struct SSCTest {
             return
         }
         sscDevice.connect()
-        
+
         let TX1 = "{\"audio\":{\"out\":{\"mute\":true}}}"
         let t1 = sscDevice.sendMessage(TX1)
         sleep(1)
@@ -44,11 +44,11 @@ struct SSCTest {
         sleep(1)
         #expect(t2.TX == TX2)
         #expect(t2.RX.starts(with: TX2))
+        sscDevice.disconnect()
     }
-    
+
     @Test func testSendMessageWithScan() {
-        let endpoint = SSCDevice.scan()[0]
-        let sscDevice = SSCDevice(endpoint: endpoint)
+        let sscDevice = SSCDevice.scan()[0]
         sscDevice.connect()
         
         let TX1 = "{\"audio\":{\"out\":{\"mute\":true}}}"
@@ -62,9 +62,29 @@ struct SSCTest {
         sleep(1)
         #expect(t2.TX == TX2)
         #expect(t2.RX.starts(with: TX2))
+        sscDevice.disconnect()
     }
-    
+
     @Test func testScan() {
         print(SSCDevice.scan())
+    }
+
+    @Test func testPathToJSONString() throws {
+        let js1 = try KHAccess.pathToJSONString(path: ["a", "b"], value: 0)
+        #expect(js1 == "{\"a\":{\"b\":0}}")
+        let js2 = try KHAccess.pathToJSONString(path: ["a", "b"], value: nil as Float?)
+        #expect(js2 == "{\"a\":{\"b\":null}}")
+    }
+
+    @Test func testFetchSSCValue() async throws {
+        let khAccess = KHAccess()
+        sleep(1)
+        try await khAccess.checkSpeakersAvailable()
+        sleep(1)
+        let result: Bool = try khAccess.fetchSSCValue(path: ["audio", "out", "mute"])
+        #expect(result == false)
+        khAccess.devices.forEach { d in
+            d.disconnect()
+        }
     }
 }
