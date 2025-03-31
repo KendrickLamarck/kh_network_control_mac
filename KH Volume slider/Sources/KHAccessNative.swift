@@ -105,10 +105,9 @@ import SwiftUI
         let transaction = try sendSSCCommand(
             command: jsonPath, checkAvailable: checkAvailable)
         let RX = transaction.RX
-        let asObj = try JSONDecoder().decode(
-            [String: [String: [String: T]]].self, from: RX.data(using: .utf8)!)
+        let asObj = try JSONSerialization.jsonObject(with: RX.data(using: .utf8)!)
         let lastKey = path.last!
-        var result: [String: Any] = asObj
+        var result: [String: Any] = asObj as! [String: Any]
         for p in path.dropLast() {
             result = result[p] as! [String: Any]
         }
@@ -129,8 +128,10 @@ import SwiftUI
         }
         devices
             .filter({ d in d.connection.state != .ready })
-            .forEach({ d in d.connect() })
-        sleep(2)
+            .forEach({ d in
+                d.connect()
+                sleep(1)
+            })
         if devices.allSatisfy({ d in d.connection.state == .ready }) {
             status = .clean
             return
@@ -139,11 +140,46 @@ import SwiftUI
             throw KHAccessError.speakersNotReachable
         }
     }
+    
+    /*
+     DUMB AND BORING STUFF BELOW THIS COMMENT
+     
+     There must be a better way to do this. Create a struct with the UI values and
+     associate a path to each one somehow. The values should know how to fetch
+     themselves or something so we can add them more easily and modularly.
+     */
 
     func fetch() async throws {
         status = .fetching
-        volume = try fetchSSCValue(path: ["audio", "out", "level"])
-        muted = try fetchSSCValue(path: ["audio", "out", "mute"])
+
+        volumeDevice = try fetchSSCValue(path: ["audio", "out", "level"])
+        mutedDevice = try fetchSSCValue(path: ["audio", "out", "mute"])
+        logoBrightnessDevice = try fetchSSCValue(path: ["ui", "logo", "brightness"])
+        for (eqIdx, eqName) in ["eq2", "eq3"].enumerated() {
+            eqsDevice[eqIdx].boost = try fetchSSCValue(path: [
+                "audio", "out", eqName, "boost",
+            ])
+            eqsDevice[eqIdx].enabled = try fetchSSCValue(path: [
+                "audio", "out", eqName, "enabled",
+            ])
+            eqsDevice[eqIdx].frequency = try fetchSSCValue(path: [
+                "audio", "out", eqName, "frequency",
+            ])
+            eqsDevice[eqIdx].gain = try fetchSSCValue(path: [
+                "audio", "out", eqName, "gain",
+            ])
+            eqsDevice[eqIdx].q = try fetchSSCValue(path: [
+                "audio", "out", eqName, "q",
+            ])
+            eqsDevice[eqIdx].type = try fetchSSCValue(path: [
+                "audio", "out", eqName, "type",
+            ])
+        }
+        volume = volumeDevice
+        muted = mutedDevice
+        logoBrightness = logoBrightnessDevice
+        eqs = eqsDevice
+
         status = .clean
     }
 
