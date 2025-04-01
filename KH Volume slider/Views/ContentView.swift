@@ -31,8 +31,24 @@ struct ContentView: View {
                         .disabled(khAccess.status != .clean)
                 }
             }
+            #if os(macOS)
             .frame(minWidth: 450)
-
+            #endif
+            .onAppear {
+                Task {
+                    try await khAccess.checkSpeakersAvailable()
+                }
+            }
+            .onDisappear {
+                Task {
+                    khAccess.devices.forEach {
+                        print("disconnecting")
+                        $0.disconnect()
+                    }
+                }
+            }
+            
+            #if os(macOS)
             Divider()
 
             VStack {
@@ -66,20 +82,34 @@ struct ContentView: View {
                     Spacer()
                     SettingsLink()
                 }
-                .onAppear {
+            }
+            #elseif os(iOS)
+            HStack {
+                Button("Ping") {
                     Task {
                         try await khAccess.checkSpeakersAvailable()
                     }
                 }
-                .onDisappear {
+                .disabled(khAccess.status == .checkingSpeakerAvailability)
+                
+                Spacer()
+                
+                StatusDisplay(status: khAccess.status)
+                
+                Spacer()
+                
+                Button("Fetch") {
                     Task {
-                        khAccess.devices.forEach {
-                            print("disconnecting")
-                            $0.disconnect()
-                        }
+                        try await khAccess.fetch()
                     }
                 }
+                .disabled(
+                    khAccess.status == .fetching
+                    || khAccess.status == .speakersUnavailable
+                )
             }
+            .padding()
+            #endif
         }
         .scenePadding()
     }

@@ -127,9 +127,11 @@ import SwiftUI
         }
         devices.forEach { d in
             if d.connection.state != .ready {
+                print("connecting")
                 d.connect()
             }
             while d.connection.state != .ready { }
+            print("connected")
         }
         status = .clean
     }
