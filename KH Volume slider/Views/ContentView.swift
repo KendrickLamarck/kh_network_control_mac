@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+typealias KHAccess = KHAccessNative
+
 struct ContentView: View {
     @State var khAccess = KHAccess()
 
@@ -64,8 +66,18 @@ struct ContentView: View {
                     Spacer()
                     SettingsLink()
                 }
-                .task {
-                    try? await khAccess.checkSpeakersAvailable()
+                .onAppear {
+                    Task {
+                        try await khAccess.checkSpeakersAvailable()
+                    }
+                }
+                .onDisappear {
+                    Task {
+                        khAccess.devices.forEach {
+                            print("disconnecting")
+                            $0.disconnect()
+                        }
+                    }
                 }
             }
         }

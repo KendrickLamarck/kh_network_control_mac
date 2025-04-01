@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-@Observable class KHAccess {
+@Observable class KHAccessNative {
     /*
      Fetches, sends and stores data from speakers.
      */
@@ -74,11 +74,10 @@ import SwiftUI
             throw KHAccessError.speakersNotReachable
         }
         let transactions = devices.map { d in d.sendMessage(command) }
-        sleep(1)
-        let RX = transactions[0].RX
-        if RX.isEmpty {
-            print("RX was empty (should not happen)")
+        for t in transactions {
+            while t.RX.isEmpty { }
         }
+        let RX = transactions[0].RX
         if RX.starts(with: "{\"osc\":{\"error\"") {
             if RX.contains("404") {
                 throw KHAccessError.addressNotFound
@@ -126,19 +125,13 @@ import SwiftUI
                 try await fetch()
             }
         }
-        devices
-            .filter({ d in d.connection.state != .ready })
-            .forEach({ d in
+        devices.forEach { d in
+            if d.connection.state != .ready {
                 d.connect()
-                sleep(1)
-            })
-        if devices.allSatisfy({ d in d.connection.state == .ready }) {
-            status = .clean
-            return
-        } else {
-            status = .speakersUnavailable
-            throw KHAccessError.speakersNotReachable
+            }
+            while d.connection.state != .ready { }
         }
+        status = .clean
     }
     
     /*

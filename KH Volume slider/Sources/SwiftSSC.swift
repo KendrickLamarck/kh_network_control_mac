@@ -13,8 +13,8 @@ class SSCTransaction {
     var error: String = ""
 }
 
-struct SSCDevice {
-    let connection: NWConnection
+class SSCDevice {
+    var connection: NWConnection
     private let dispatchQueue: DispatchQueue
 
     enum SSCDeviceError: Error {
@@ -58,7 +58,17 @@ struct SSCDevice {
     }
 
     func connect() {
-        connection.start(queue: dispatchQueue)
+        switch connection.state {
+        case .ready, .preparing:
+            return
+        case .waiting:
+            connection.restart()
+        case .cancelled, .failed:
+            connection = NWConnection(to: connection.endpoint, using: .tcp)
+            connection.start(queue: dispatchQueue)
+        default:
+            connection.start(queue: dispatchQueue)
+        }
     }
 
     func disconnect() {
