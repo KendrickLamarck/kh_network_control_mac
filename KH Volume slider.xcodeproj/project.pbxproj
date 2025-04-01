@@ -41,9 +41,6 @@
 			membershipExceptions = (
 				Assets.xcassets,
 				"Preview Content/Preview Assets.xcassets",
-				Resources/khtool/.gitignore,
-				Resources/khtool/LICENSE,
-				Resources/khtool/README.md,
 			);
 			target = C50DCA5E2D17309900780112 /* KH Volume slider */;
 		};
@@ -54,9 +51,6 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				C5B99A552D1DB3B7003366EB /* Exceptions for "KH Volume slider" folder in "KH Volume slider" target */,
-			);
-			explicitFolders = (
-				"Resources/python-packages",
 			);
 			path = "KH Volume slider";
 			sourceTree = "<group>";
