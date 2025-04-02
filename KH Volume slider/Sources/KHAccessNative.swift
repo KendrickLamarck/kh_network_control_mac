@@ -129,8 +129,18 @@ import SwiftUI
             if d.connection.state != .ready {
                 print("connecting")
                 d.connect()
+                print("connect function returned")
             }
-            while d.connection.state != .ready { }
+            var loopCounter = 0
+            while d.connection.state != .ready {
+                sleep(1)
+                loopCounter += 1
+                if loopCounter > 5 {
+                    print("timed out, could not connect")
+                    status = .speakersUnavailable
+                    return
+                }
+            }
             print("connected")
         }
         status = .clean
