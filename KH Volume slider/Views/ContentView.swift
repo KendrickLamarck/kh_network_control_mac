@@ -41,10 +41,12 @@ struct ContentView: View {
             }
             .onDisappear {
                 Task {
-                    khAccess.devices.forEach {
-                        print("disconnecting")
-                        $0.disconnect()
-                    }
+                    //khAccess.devices.forEach {
+                    //    print("disconnecting")
+                    //    $0.disconnect()
+                    // }
+                    print("asking devices to disconnect")
+                    try khAccess.sendSSCValue(path: ["osc", "state", "close"], value: true)
                 }
             }
             
