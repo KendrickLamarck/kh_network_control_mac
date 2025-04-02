@@ -75,7 +75,20 @@ import SwiftUI
         }
         let transactions = devices.map { d in d.sendMessage(command) }
         for t in transactions {
-            while t.RX.isEmpty { }
+            let deadline = Date.now.addingTimeInterval(5)
+            var success = false
+            while Date.now < deadline {
+                if !t.RX.isEmpty {
+                    success = true
+                    break
+                }
+            }
+            if !success {
+                print("No response from speaker")
+                status = .speakersUnavailable
+                throw KHAccessError.speakersNotReachable
+            }
+
         }
         let RX = transactions[0].RX
         if RX.starts(with: "{\"osc\":{\"error\"") {
@@ -114,36 +127,41 @@ import SwiftUI
     }
 
     func checkSpeakersAvailable() async throws {
+        print(devices.isEmpty)
         status = .checkingSpeakerAvailability
         if devices.isEmpty {
             status = .scanning
             devices = SSCDevice.scan()
             if devices.isEmpty {
                 status = .noSpeakersFoundDuringScan
+                return
             } else {
                 status = .clean
                 try await fetch()
             }
         }
-        devices.forEach { d in
+        for d in devices {
             if d.connection.state != .ready {
                 print("connecting")
                 d.connect()
-                print("connect function returned")
             }
-            var loopCounter = 0
-            while d.connection.state != .ready {
-                sleep(1)
-                loopCounter += 1
-                if loopCounter > 5 {
-                    print("timed out, could not connect")
-                    status = .speakersUnavailable
-                    return
+            let deadline = Date.now.addingTimeInterval(5)
+            var success = false
+            while Date.now < deadline {
+                if d.connection.state == .ready {
+                    success = true
+                    break
                 }
+            }
+            if !success {
+                print("timed out, could not connect")
+                status = .speakersUnavailable
+                throw KHAccessError.speakersNotReachable
             }
             print("connected")
         }
         status = .clean
+        try await fetch()
     }
     
     /*
