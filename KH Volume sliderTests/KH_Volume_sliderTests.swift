@@ -40,13 +40,13 @@ struct TestSSC {
 
         let TX1 = "{\"audio\":{\"out\":{\"mute\":true}}}"
         let t1 = sscDevice.sendMessage(TX1)
-        while t1.TX.isEmpty {}
+        while t1.RX.isEmpty {}
         #expect(t1.TX == TX1)
         #expect(t1.RX.starts(with: TX1))
         
         let TX2 = "{\"audio\":{\"out\":{\"mute\":false}}}"
         let t2 = sscDevice.sendMessage(TX2)
-        while t2.TX.isEmpty {}
+        while t2.RX.isEmpty {}
         #expect(t2.TX == TX2)
         #expect(t2.RX.starts(with: TX2))
         sscDevice.disconnect()
@@ -87,7 +87,7 @@ struct TestSSC {
         sleep(1)
         try await khAccess.checkSpeakersAvailable()
         sleep(1)
-        let result: Bool = try khAccess.fetchSSCValue(path: ["audio", "out", "mute"])
+        let result: Bool = try await khAccess.fetchSSCValue(path: ["audio", "out", "mute"])
         #expect(result == false)
         khAccess.devices.forEach { d in
             d.disconnect()

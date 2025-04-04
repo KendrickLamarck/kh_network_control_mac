@@ -55,6 +55,7 @@ import SwiftUI
         case jsonError
         case messageNotUnderstood
         case addressNotFound
+        case noSpeakersFoundDuringScan
     }
 
     static func pathToJSONString<T>(path: [String], value: T) throws -> String
@@ -67,12 +68,9 @@ import SwiftUI
         return jsonPath
     }
 
-    private func sendSSCCommand(command: String, checkAvailable: Bool = true)
-        throws -> SSCTransaction
+    private func sendSSCCommand(command: String)
+        async throws -> SSCTransaction
     {
-        if checkAvailable && status == .speakersUnavailable {
-            throw KHAccessError.speakersNotReachable
-        }
         let transactions = devices.map { d in d.sendMessage(command) }
         for t in transactions {
             let deadline = Date.now.addingTimeInterval(5)
@@ -103,19 +101,17 @@ import SwiftUI
     }
 
     func sendSSCValue<T>(path: [String], value: T, checkAvailable: Bool = true)
-        throws where T: Encodable
+        async throws where T: Encodable
     {
         /// sends the command `{"p1":{"p2":value}}` to the device, if `path=["p1", "p2"]`.
         let jsonPath = try KHAccess.pathToJSONString(path: path, value: value)
-        try _ = sendSSCCommand(
-            command: jsonPath, checkAvailable: checkAvailable)
+        try await _ = sendSSCCommand(command: jsonPath)
     }
 
-    func fetchSSCValue<T>(path: [String], checkAvailable: Bool = true) throws -> T
+    func fetchSSCValue<T>(path: [String]) async throws -> T
     where T: Decodable {
         let jsonPath = try KHAccess.pathToJSONString(path: path, value: nil as Float?)
-        let transaction = try sendSSCCommand(
-            command: jsonPath, checkAvailable: checkAvailable)
+        let transaction = try await sendSSCCommand(command: jsonPath)
         let RX = transaction.RX
         let asObj = try JSONSerialization.jsonObject(with: RX.data(using: .utf8)!)
         let lastKey = path.last!
@@ -123,23 +119,23 @@ import SwiftUI
         for p in path.dropLast() {
             result = result[p] as! [String: Any]
         }
-        return result[lastKey] as! T
+        let retval = result[lastKey] as! T
+        print(retval)
+        return retval
     }
 
-    func checkSpeakersAvailable() async throws {
-        print(devices.isEmpty)
-        status = .checkingSpeakerAvailability
+    private func scan() async throws {
+        status = .scanning
+        devices = SSCDevice.scan()
         if devices.isEmpty {
-            status = .scanning
-            devices = SSCDevice.scan()
-            if devices.isEmpty {
-                status = .noSpeakersFoundDuringScan
-                return
-            } else {
-                status = .clean
-                try await fetch()
-            }
+            status = .noSpeakersFoundDuringScan
+            throw KHAccessError.noSpeakersFoundDuringScan
+        } else {
+            status = .clean
         }
+    }
+
+    private func connectAll() async throws {
         for d in devices {
             if d.connection.state != .ready {
                 print("connecting")
@@ -161,12 +157,29 @@ import SwiftUI
             print("connected")
         }
         status = .clean
-        try await fetch()
     }
-    
+
+    private func disconnectAll() {
+        for d in devices {
+            print("disconnecting")
+            d.disconnect()
+        }
+    }
+
+    func checkSpeakersAvailable() async throws {
+        status = .checkingSpeakerAvailability
+        if devices.isEmpty {
+            try await scan()
+        }
+        try await connectAll()
+        status = .clean
+        try await fetch()
+        disconnectAll()
+    }
+
     /*
      DUMB AND BORING STUFF BELOW THIS COMMENT
-     
+    
      There must be a better way to do this. Create a struct with the UI values and
      associate a path to each one somehow. The values should know how to fetch
      themselves or something so we can add them more easily and modularly.
@@ -174,27 +187,30 @@ import SwiftUI
 
     func fetch() async throws {
         status = .fetching
+        try await connectAll()
 
-        volumeDevice = try fetchSSCValue(path: ["audio", "out", "level"])
-        mutedDevice = try fetchSSCValue(path: ["audio", "out", "mute"])
-        logoBrightnessDevice = try fetchSSCValue(path: ["ui", "logo", "brightness"])
+        volumeDevice = try await fetchSSCValue(path: ["audio", "out", "level"])
+        mutedDevice = try await fetchSSCValue(path: ["audio", "out", "mute"])
+        logoBrightnessDevice = try await fetchSSCValue(path: [
+            "ui", "logo", "brightness",
+        ])
         for (eqIdx, eqName) in ["eq2", "eq3"].enumerated() {
-            eqsDevice[eqIdx].boost = try fetchSSCValue(path: [
+            eqsDevice[eqIdx].boost = try await fetchSSCValue(path: [
                 "audio", "out", eqName, "boost",
             ])
-            eqsDevice[eqIdx].enabled = try fetchSSCValue(path: [
+            eqsDevice[eqIdx].enabled = try await fetchSSCValue(path: [
                 "audio", "out", eqName, "enabled",
             ])
-            eqsDevice[eqIdx].frequency = try fetchSSCValue(path: [
+            eqsDevice[eqIdx].frequency = try await fetchSSCValue(path: [
                 "audio", "out", eqName, "frequency",
             ])
-            eqsDevice[eqIdx].gain = try fetchSSCValue(path: [
+            eqsDevice[eqIdx].gain = try await fetchSSCValue(path: [
                 "audio", "out", eqName, "gain",
             ])
-            eqsDevice[eqIdx].q = try fetchSSCValue(path: [
+            eqsDevice[eqIdx].q = try await fetchSSCValue(path: [
                 "audio", "out", eqName, "q",
             ])
-            eqsDevice[eqIdx].type = try fetchSSCValue(path: [
+            eqsDevice[eqIdx].type = try await fetchSSCValue(path: [
                 "audio", "out", eqName, "type",
             ])
         }
@@ -203,56 +219,70 @@ import SwiftUI
         logoBrightness = logoBrightnessDevice
         eqs = eqsDevice
 
+        disconnectAll()
         status = .clean
     }
 
     private func sendVolumeToDevice() async throws {
-        //try await runKHToolProcess(args: ["--level", "\(Int(volume))"])
-        try sendSSCValue(path: ["audio", "out", "level"], value: Int(volume))
+        try await sendSSCValue(path: ["audio", "out", "level"], value: Int(volume))
     }
 
     private func sendEqBoost(eqIdx: Int, eqName: String) async throws {
-        try sendSSCValue(
-            path: ["audio", "out", eqName, "boost"], value: eqs[eqIdx].boost)
+        try await sendSSCValue(
+            path: ["audio", "out", eqName, "boost"],
+            value: eqs[eqIdx].boost
+        )
     }
 
     private func sendEqEnabled(eqIdx: Int, eqName: String) async throws {
-        try sendSSCValue(
-            path: ["audio", "out", eqName, "enabled"], value: eqs[eqIdx].enabled)
+        try await sendSSCValue(
+            path: ["audio", "out", eqName, "enabled"],
+            value: eqs[eqIdx].enabled
+        )
     }
 
     private func sendEqFrequency(eqIdx: Int, eqName: String) async throws {
-        try sendSSCValue(
-            path: ["audio", "out", eqName, "frequency"], value: eqs[eqIdx].frequency)
+        try await sendSSCValue(
+            path: ["audio", "out", eqName, "frequency"],
+            value: eqs[eqIdx].frequency
+        )
     }
 
     private func sendEqGain(eqIdx: Int, eqName: String) async throws {
-        try sendSSCValue(
-            path: ["audio", "out", eqName, "gain"], value: eqs[eqIdx].gain)
+        try await sendSSCValue(
+            path: ["audio", "out", eqName, "gain"],
+            value: eqs[eqIdx].gain
+        )
     }
 
     private func sendEqQ(eqIdx: Int, eqName: String) async throws {
-        try sendSSCValue(
-            path: ["audio", "out", eqName, "q"], value: eqs[eqIdx].q)
+        try await sendSSCValue(
+            path: ["audio", "out", eqName, "q"],
+            value: eqs[eqIdx].q
+        )
     }
 
     private func sendEqType(eqIdx: Int, eqName: String) async throws {
-        try sendSSCValue(
-            path: ["audio", "out", eqName, "type"], value: eqs[eqIdx].type)
+        try await sendSSCValue(
+            path: ["audio", "out", eqName, "type"],
+            value: eqs[eqIdx].type
+        )
     }
 
     private func sendMuteOrUnmute() async throws {
-        try sendSSCValue(path: ["audio", "out", "mute"], value: muted)
+        try await sendSSCValue(path: ["audio", "out", "mute"], value: muted)
     }
 
     private func sendLogoBrightness() async throws {
-        /// We don't want to use the `--brightness` option because it can't take floats (although we don't either)
-        /// and it only goes up to 100 even though the real brightness goes up to 125.
-        try sendSSCValue(
-            path: ["ui", "logo", "brightness"], value: logoBrightness)
+        try await sendSSCValue(
+            path: ["ui", "logo", "brightness"],
+            value: logoBrightness
+        )
     }
 
     func send() async throws {
+        try await connectAll()
+
         if volume != volumeDevice {
             try await sendVolumeToDevice()
             volumeDevice = volume
@@ -291,5 +321,7 @@ import SwiftUI
                 eqsDevice[eqIdx].type = eqs[eqIdx].type
             }
         }
+
+        disconnectAll()
     }
 }

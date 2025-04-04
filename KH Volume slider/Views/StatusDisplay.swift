@@ -31,18 +31,20 @@ struct StatusDisplay: View {
             .frame(height: 20)
             .frame(minWidth: 33)
             switch status {
-            case .clean:
-                EmptyView()
             case .speakersUnavailable:
                 Text("Speakers unavailable")
+            case .noSpeakersFoundDuringScan:
+                Text("No speakers found during scan")
             case .checkingSpeakerAvailability:
                 Text("Checking speaker availability...")
+            default:
+                EmptyView()
+            /*
             case .fetching:
                 Text("Fetching...")
             case .scanning:
                 Text("Scanning...")
-            case .noSpeakersFoundDuringScan:
-                Text("No speakers found during scan")
+             */
             }
         }
     }

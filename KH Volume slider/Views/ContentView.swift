@@ -39,17 +39,6 @@ struct ContentView: View {
                     try await khAccess.checkSpeakersAvailable()
                 }
             }
-            .onDisappear {
-                Task {
-                    //print("asking devices to disconnect")
-                    //try khAccess.sendSSCValue(path: ["osc", "state", "close"], value: true)
-                    khAccess.devices.forEach {
-                        print("closing network connection")
-                        $0.disconnect()
-                    }
-                }
-            }
-            
             #if os(macOS)
             Divider()
 
