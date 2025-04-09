@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+typealias KHAccess = KHAccessNative
+
 @Observable class KHAccessNative {
     /*
      Fetches, sends and stores data from speakers.

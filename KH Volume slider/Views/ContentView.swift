@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
+import Foundation
 
-typealias KHAccess = KHAccessNative
 
 struct ContentView: View {
     @State var khAccess = KHAccess()
@@ -31,15 +31,12 @@ struct ContentView: View {
                         .disabled(khAccess.status != .clean)
                 }
             }
-            #if os(macOS)
             .frame(minWidth: 450)
-            #endif
             .onAppear {
                 Task {
                     try await khAccess.checkSpeakersAvailable()
                 }
             }
-            #if os(macOS)
             Divider()
 
             VStack {
@@ -60,47 +57,18 @@ struct ContentView: View {
                         khAccess.status == .fetching
                             || khAccess.status == .speakersUnavailable
                     )
+                    
+                    StatusDisplay(status: khAccess.status)
 
                     Spacer()
 
+                    #if os(macOS)
                     Button("Quit") {
                         NSApplication.shared.terminate(nil)
                     }
-                }
-
-                HStack {
-                    StatusDisplay(status: khAccess.status)
-                    Spacer()
-                    SettingsLink()
+                    #endif
                 }
             }
-            #elseif os(iOS)
-            HStack {
-                Button("Ping") {
-                    Task {
-                        try await khAccess.checkSpeakersAvailable()
-                    }
-                }
-                .disabled(khAccess.status == .checkingSpeakerAvailability)
-                
-                Spacer()
-                
-                StatusDisplay(status: khAccess.status)
-                
-                Spacer()
-                
-                Button("Fetch") {
-                    Task {
-                        try await khAccess.fetch()
-                    }
-                }
-                .disabled(
-                    khAccess.status == .fetching
-                    || khAccess.status == .speakersUnavailable
-                )
-            }
-            .padding()
-            #endif
         }
         .scenePadding()
     }
