@@ -169,6 +169,7 @@ typealias KHAccess = KHAccessNative
     }
 
     func checkSpeakersAvailable() async throws {
+        print("CHECKING AVAILABILITY")
         status = .checkingSpeakerAvailability
         if devices.isEmpty {
             try await scan()
@@ -188,6 +189,7 @@ typealias KHAccess = KHAccessNative
      */
 
     func fetch() async throws {
+        print("FETCHING")
         status = .fetching
         try await connectAll()
 
@@ -283,6 +285,7 @@ typealias KHAccess = KHAccessNative
     }
 
     func send() async throws {
+        print("SENDING")
         try await connectAll()
 
         if volume != volumeDevice {

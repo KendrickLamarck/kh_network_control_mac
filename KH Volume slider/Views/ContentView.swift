@@ -14,63 +14,71 @@ struct ContentView: View {
 
     var body: some View {
         VStack {
+            #if os(iOS)
+            HStack {
+                Button("Fetch") {
+                    Task {
+                        try await khAccess.checkSpeakersAvailable()
+                    }
+                }
+                .disabled(khAccess.status == .checkingSpeakerAvailability)
+
+                Spacer()
+
+                StatusDisplay(status: khAccess.status)
+            }
+            .scenePadding()
+            #endif
+
             TabView {
                 Tab("Volume", systemImage: "speaker.wave.3") {
                     VolumeTab(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
                         .disabled(khAccess.status != .clean)
                 }
-                Tab("DSP", systemImage: "equal") {
+                Tab("DSP", systemImage: "slider.vertical.3") {
                     EqPanel(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
                         .disabled(khAccess.status != .clean)
                 }
-                Tab("Hardware", systemImage: "paintpalette") {
+                Tab("Hardware", systemImage: "hifispeaker") {
                     HardwareTab(khAccess: khAccess)
                         .padding(.horizontal).padding(.bottom)
                         .disabled(khAccess.status != .clean)
                 }
             }
+            #if os(macOS)
+            .scenePadding()
             .frame(minWidth: 450)
+            #endif
             .onAppear {
                 Task {
                     try await khAccess.checkSpeakersAvailable()
                 }
             }
-            Divider()
-
-            VStack {
-                HStack {
-                    Button("Ping") {
-                        Task {
-                            try await khAccess.checkSpeakersAvailable()
-                        }
+            .textFieldStyle(.roundedBorder)
+            
+            #if os(macOS)
+            HStack {
+                Button("Fetch") {
+                    Task {
+                        try await khAccess.checkSpeakersAvailable()
                     }
-                    .disabled(khAccess.status == .checkingSpeakerAvailability)
+                }
+                .disabled(khAccess.status == .checkingSpeakerAvailability)
+                
+                Spacer()
+                
+                StatusDisplay(status: khAccess.status)
 
-                    Button("Fetch") {
-                        Task {
-                            try await khAccess.fetch()
-                        }
-                    }
-                    .disabled(
-                        khAccess.status == .fetching
-                            || khAccess.status == .speakersUnavailable
-                    )
-                    
-                    StatusDisplay(status: khAccess.status)
-
-                    Spacer()
-
-                    #if os(macOS)
-                    Button("Quit") {
-                        NSApplication.shared.terminate(nil)
-                    }
-                    #endif
+                Button("Quit") {
+                    NSApplication.shared.terminate(nil)
                 }
             }
+            .padding([.leading, .bottom, .trailing])
+            #endif
         }
-        .scenePadding()
+        // .frame(maxHeight: .infinity)
     }
 }
 

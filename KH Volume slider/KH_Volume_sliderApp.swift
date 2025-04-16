@@ -20,7 +20,7 @@ struct KH_Volume_sliderApp: App {
         }
         #elseif os(iOS)
         WindowGroup {
-            ContentViewMobile()
+            ContentView()
         }
         #endif
     }

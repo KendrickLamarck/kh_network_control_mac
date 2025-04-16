@@ -28,8 +28,23 @@ struct VolumeTab: View {
             }
             .disabled(khAccess.status == .speakersUnavailable)
 
+            #if os(iOS)
+            // Text("\(Int(khAccess.volume))")
+
+            Stepper("+/- 3 db", value: $khAccess.volume, in: 0...120, step: 3) {
+                editing in
+                if editing {
+                    return
+                }
+                Task {
+                    try await khAccess.send()
+                }
+            }
+            #endif
+
             Toggle(
-                "Mute", systemImage: "speaker.slash.fill",
+                "Mute",
+                systemImage: "speaker.slash.fill",
                 isOn: $khAccess.muted
             )
             .toggleStyle(.button)
@@ -40,5 +55,6 @@ struct VolumeTab: View {
             }
             .disabled(khAccess.status == .speakersUnavailable)
         }
+        .scenePadding()
     }
 }
