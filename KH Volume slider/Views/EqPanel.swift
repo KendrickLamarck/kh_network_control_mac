@@ -153,16 +153,13 @@ struct EqBandPanel: View {
             .frame(width: 160)
             .onChange(of: khAccess.eqs[selectedEq].type) {
                 Task {
-                    // This happens when eq is switched. Should not happen.
-                    print("ZXCV")
                     try await khAccess.send()
                 }
             }
             .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
-            if khAccess.eqs[selectedEq].enabled[selectedEqBand] {
-                Text("Disable to change type")
-                    .foregroundStyle(.secondary)
-            }
+            
+            Text("Disable to change type")
+                .opacity(khAccess.eqs[selectedEq].enabled[selectedEqBand] ? 1 : 0)
 
             Spacer()
 
@@ -172,8 +169,6 @@ struct EqBandPanel: View {
             .toggleStyle(.switch)
             .onChange(of: khAccess.eqs[selectedEq].enabled) {
                 Task {
-                    // This is triggered when eq is switched. Should not happen.
-                    print("QWER")
                     try await khAccess.send()
                 }
             }
@@ -231,11 +226,11 @@ struct EqBandPanel: View {
                 }
             }
             .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
-
-            if khAccess.eqs[selectedEq].enabled[selectedEqBand] {
-                Text("Disable to change type")
-                    .foregroundStyle(.secondary)
-            }
+            
+            Text("Disable to change type")
+                .opacity(khAccess.eqs[selectedEq].enabled[selectedEqBand] ? 1 : 0)
+            
+            Spacer()
 
             Toggle(
                 "Enable band",
@@ -253,75 +248,66 @@ struct EqBandPanel: View {
     }
 }
 
-struct EqPanel: View {
+struct EqPanel_: View {
     var khAccess: KHAccess
-
-    @State private var selectedEq: Int = 0
-    /// doesn't seem very elegant. But if I make this a single `@State: Int`, it seems
-    /// to be shared between instances if this view. I don't know how to do that.
-    /// OK there are ways to do it (using the `.id()` modifier), but then the state resets
-    /// when switching EQs. I don't think I want that.
-    @State private var selectedEqBand: [Int] = [0, 0]
+    var selectedEq: Int
+    @State private var selectedEqBand: Int = 0
+    
     var body: some View {
-        VStack(spacing: 20) {
-            Picker("", selection: $selectedEq) {
-                Text("eq2").tag(0)
-                Text("eq3").tag(1)
-            }
-            .pickerStyle(.segmented)
+        var numBands: Int {
+            khAccess.eqs[selectedEq].enabled.count
+        }
 
+        VStack {
             EqBandPanel(
                 khAccess: khAccess,
                 selectedEq: selectedEq,
-                selectedEqBand: selectedEqBand[selectedEq]
+                selectedEqBand: selectedEqBand
             )
             
+            Spacer()
+
             #if os(macOS)
-            ZStack {
-                Picker("", selection: $selectedEqBand[selectedEq]) {
-                    ForEach((1...10), id: \.self) { i in
-                        Text("\(i)").tag(i - 1)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .opacity(selectedEq == 0 ? 1 : 0)
-                VStack {
-                    Picker("", selection: $selectedEqBand[selectedEq]) {
-                        ForEach((1...10), id: \.self) { i in
-                            Text("\(i)").tag(i - 1)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    Picker("", selection: $selectedEqBand[selectedEq]) {
-                        ForEach((11...20), id: \.self) { i in
-                            Text("\(i)").tag(i - 1)
+            VStack {
+                ForEach((1...numBands/10), id: \.self) { row in
+                    Picker("", selection: $selectedEqBand) {
+                        ForEach((10 * (row - 1) ... 10 * row), id: \.self) { i in
+                            Text("\(i+1)").tag(i)
                         }
                     }
                     .pickerStyle(.segmented)
                 }
-                .opacity(selectedEq == 1 ? 1 : 0)
             }
             #elseif os(iOS)
-            ZStack {
-                Picker(selection: $selectedEqBand[selectedEq], label: Text("EQ Band")) {
-                    ForEach((1...10), id: \.self) { i in
-                        Text("\(i)").tag(i - 1)
-                    }
+            Picker(selection: $selectedEqBand, label: Text("EQ Band")) {
+                ForEach((1...numBands), id: \.self) { i in
+                    Text("\(i)").tag(i - 1)
                 }
-                .opacity(selectedEq == 0 ? 1 : 0)
-                Picker(
-                    selection: $selectedEqBand[selectedEq],
-                    label: Text("EQ Band")
-                ) {
-                    ForEach((1...20), id: \.self) { i in
-                        Text("\(i)").tag(i - 1)
-                    }
-                }
-                .opacity(selectedEq == 1 ? 1 : 0)
             }
             .pickerStyle(.wheel)
             #endif
         }
-        .scenePadding()
+    }
+}
+
+struct EqPanel: View {
+    var khAccess: KHAccess
+
+    @State private var selectedEq: Int = 0
+    var body: some View {
+        VStack(spacing: 20) {
+            Picker("", selection: $selectedEq) {
+                Text("post EQ").tag(0)
+                Text("calibration EQ").tag(1)
+            }
+            .pickerStyle(.segmented)
+                        
+            ZStack {
+                EqPanel_(khAccess: khAccess, selectedEq: 0)
+                    .opacity(selectedEq == 0 ? 1 : 0)
+                EqPanel_(khAccess: khAccess, selectedEq: 1)
+                    .opacity(selectedEq == 1 ? 1 : 0)
+            }
+        }
     }
 }

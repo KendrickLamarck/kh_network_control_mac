@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct Eq: Codable, Equatable {
+    var desc: String = ""
     var boost: [Double]
     var enabled: [Bool]
     var frequency: [Double]

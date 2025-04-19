@@ -76,8 +76,6 @@ class SSCDevice {
     }
 
     func sendMessage(_ TXString: String) -> SSCTransaction {
-        print("SENDING MESSAGE")
-        print(TXString)
         let transaction = SSCTransaction()
         let sendCompHandler = NWConnection.SendCompletion.contentProcessed {
             error in

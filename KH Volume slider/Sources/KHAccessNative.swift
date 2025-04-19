@@ -9,6 +9,18 @@ import SwiftUI
 
 typealias KHAccess = KHAccessNative
 
+class SSCParameter<T> {
+    var value: T
+    var deviceValue: T
+    var devices: [SSCDevice]
+    
+    init(value: T, devices: [SSCDevice]) {
+        self.value = value
+        self.deviceValue = value
+        self.devices = devices
+    }
+}
+
 @Observable class KHAccessNative {
     /*
      Fetches, sends and stores data from speakers.
