@@ -9,19 +9,8 @@ import SwiftUI
 
 typealias KHAccess = KHAccessNative
 
-class SSCParameter<T> {
-    var value: T
-    var deviceValue: T
-    var devices: [SSCDevice]
-    
-    init(value: T, devices: [SSCDevice]) {
-        self.value = value
-        self.deviceValue = value
-        self.devices = devices
-    }
-}
-
-@Observable class KHAccessNative {
+@Observable
+class KHAccessNative {
     /*
      Fetches, sends and stores data from speakers.
      */
@@ -72,70 +61,14 @@ class SSCParameter<T> {
         case noSpeakersFoundDuringScan
     }
 
-    static func pathToJSONString<T>(path: [String], value: T) throws -> String
-    where T: Encodable {
-        let jsonData = try JSONEncoder().encode(value)
-        var jsonPath = String(data: jsonData, encoding: .utf8)!
-        for p in path.reversed() {
-            jsonPath = "{\"\(p)\":\(jsonPath)}"
+    func sendSSCValue<T>(path: [String], value: T) async throws where T: Encodable {
+        for d in devices {
+            try d.sendSSCValue(path: path, value: value)
         }
-        return jsonPath
     }
 
-    private func sendSSCCommand(command: String)
-        async throws -> SSCTransaction
-    {
-        let transactions = devices.map { d in d.sendMessage(command) }
-        for t in transactions {
-            let deadline = Date.now.addingTimeInterval(5)
-            var success = false
-            while Date.now < deadline {
-                if !t.RX.isEmpty {
-                    success = true
-                    break
-                }
-            }
-            if !success {
-                print("No response from speaker")
-                status = .speakersUnavailable
-                throw KHAccessError.speakersNotReachable
-            }
-
-        }
-        let RX = transactions[0].RX
-        if RX.starts(with: "{\"osc\":{\"error\"") {
-            if RX.contains("404") {
-                throw KHAccessError.addressNotFound
-            }
-            if RX.contains("400") {
-                throw KHAccessError.messageNotUnderstood
-            }
-        }
-        return transactions[0]
-    }
-
-    func sendSSCValue<T>(path: [String], value: T, checkAvailable: Bool = true)
-        async throws where T: Encodable
-    {
-        /// sends the command `{"p1":{"p2":value}}` to the device, if `path=["p1", "p2"]`.
-        let jsonPath = try KHAccess.pathToJSONString(path: path, value: value)
-        try await _ = sendSSCCommand(command: jsonPath)
-    }
-
-    func fetchSSCValue<T>(path: [String]) async throws -> T
-    where T: Decodable {
-        let jsonPath = try KHAccess.pathToJSONString(path: path, value: nil as Float?)
-        let transaction = try await sendSSCCommand(command: jsonPath)
-        let RX = transaction.RX
-        let asObj = try JSONSerialization.jsonObject(with: RX.data(using: .utf8)!)
-        let lastKey = path.last!
-        var result: [String: Any] = asObj as! [String: Any]
-        for p in path.dropLast() {
-            result = result[p] as! [String: Any]
-        }
-        let retval = result[lastKey] as! T
-        print(retval)
-        return retval
+    func fetchSSCValue<T>(path: [String]) async throws -> T where T: Decodable {
+        return try devices[0].fetchSSCValue(path: path)
     }
 
     private func scan() async throws {
@@ -152,7 +85,6 @@ class SSCParameter<T> {
     private func connectAll() async throws {
         for d in devices {
             if d.connection.state != .ready {
-                print("connecting")
                 d.connect()
             }
             let deadline = Date.now.addingTimeInterval(5)
@@ -168,20 +100,17 @@ class SSCParameter<T> {
                 status = .speakersUnavailable
                 throw KHAccessError.speakersNotReachable
             }
-            print("connected")
         }
         status = .clean
     }
 
     private func disconnectAll() {
         for d in devices {
-            print("disconnecting")
             d.disconnect()
         }
     }
 
     func checkSpeakersAvailable() async throws {
-        print("CHECKING AVAILABILITY")
         status = .checkingSpeakerAvailability
         if devices.isEmpty {
             try await scan()
@@ -201,7 +130,6 @@ class SSCParameter<T> {
      */
 
     func fetch() async throws {
-        print("FETCHING")
         status = .fetching
         try await connectAll()
 
@@ -297,7 +225,6 @@ class SSCParameter<T> {
     }
 
     func send() async throws {
-        print("SENDING")
         try await connectAll()
 
         if volume != volumeDevice {
