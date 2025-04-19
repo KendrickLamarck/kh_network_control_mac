@@ -18,7 +18,7 @@ class SSCParameter<T> where T: Equatable, T: Codable {
     private var deviceValue: T
     private var path: [String]
 
-    init(value: T, path: [String], devices: [SSCDevice]) {
+    init(value: T, path: [String]) {
         self.value = value
         self.deviceValue = value
         self.path = path
