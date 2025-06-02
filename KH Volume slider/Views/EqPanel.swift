@@ -271,7 +271,7 @@ struct EqPanel_: View {
             VStack {
                 ForEach((1...numBands/10), id: \.self) { row in
                     Picker("", selection: $selectedEqBand) {
-                        ForEach((10 * (row - 1) ... 10 * row), id: \.self) { i in
+                        ForEach((10 * (row - 1) ... 10 * row - 1), id: \.self) { i in
                             Text("\(i+1)").tag(i)
                         }
                     }

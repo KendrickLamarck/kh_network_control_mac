@@ -52,12 +52,7 @@ class KHAccessNative {
     }
 
     enum KHAccessError: Error {
-        case processError
         case speakersNotReachable
-        case fileError
-        case jsonError
-        case messageNotUnderstood
-        case addressNotFound
         case noSpeakersFoundDuringScan
     }
 
@@ -70,8 +65,13 @@ class KHAccessNative {
     func fetchSSCValue<T>(path: [String]) async throws -> T where T: Decodable {
         return try devices[0].fetchSSCValue(path: path)
     }
+    
+    func clearDevices() {
+        devices.removeAll()
+    }
 
     private func scan() async throws {
+        /// Scan for devices, replacing current device list.
         status = .scanning
         devices = SSCDevice.scan()
         if devices.isEmpty {

@@ -15,17 +15,26 @@ struct ContentView: View {
     var body: some View {
         VStack {
             #if os(iOS)
-            HStack {
-                Button("Fetch") {
-                    Task {
-                        try await khAccess.checkSpeakersAvailable()
+            ZStack(alignment: .center) {
+                StatusDisplay(status: khAccess.status)
+
+                HStack {
+                    Button("Fetch") {
+                        Task {
+                            try await khAccess.checkSpeakersAvailable()
+                        }
+                    }
+
+                    Spacer()
+
+                    Button("Rescan") {
+                        Task {
+                            khAccess.clearDevices()
+                            try await khAccess.checkSpeakersAvailable()
+                        }
                     }
                 }
                 .disabled(khAccess.status == .checkingSpeakerAvailability)
-
-                Spacer()
-
-                StatusDisplay(status: khAccess.status)
             }
             .scenePadding()
             #endif
@@ -62,6 +71,15 @@ struct ContentView: View {
             HStack {
                 Button("Fetch") {
                     Task {
+                        try await khAccess.checkSpeakersAvailable()
+                    }
+                }
+                .disabled(khAccess.status == .checkingSpeakerAvailability)
+                
+                
+                Button("Rescan") {
+                    Task {
+                        khAccess.clearDevices()
                         try await khAccess.checkSpeakersAvailable()
                     }
                 }

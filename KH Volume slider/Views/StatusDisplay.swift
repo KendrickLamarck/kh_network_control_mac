@@ -17,31 +17,28 @@ struct StatusDisplay: View {
                 Text("Speakers unavailable")
             case .noSpeakersFoundDuringScan:
                 Text("No speakers found during scan")
-            case .checkingSpeakerAvailability:
-                Text("Checking speaker availability...")
             default:
                 EmptyView()
-            /*
-            case .fetching:
-                Text("Fetching...")
-            case .scanning:
-                Text("Scanning...")
-             */
 
+            let pv = ProgressView()
+                #if os(macOS)
+                    .scaleEffect(0.5)
+                #endif
+            let circ = Image(systemName: "circle.fill")
             Group {
                 switch status {
                 case .clean:
-                    Image(systemName: "circle.fill").foregroundColor(.green)
+                    circ.foregroundColor(.green)
                 case .fetching:
-                    ProgressView().scaleEffect(0.5)
+                    pv
                 case .checkingSpeakerAvailability:
-                    ProgressView().scaleEffect(0.5)
+                    pv
                 case .speakersUnavailable:
-                    Image(systemName: "circle.fill").foregroundColor(.red)
+                    circ.foregroundColor(.red)
                 case .scanning:
-                    ProgressView().scaleEffect(0.5)
+                    pv
                 case .noSpeakersFoundDuringScan:
-                    Image(systemName: "circle.fill").foregroundColor(.red)
+                    circ.foregroundColor(.red)
                 }
             }
             .frame(height: 20)
