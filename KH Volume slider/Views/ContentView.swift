@@ -47,7 +47,7 @@ struct ContentView: View {
                 }
                 Tab("DSP", systemImage: "slider.vertical.3") {
                     EqPanel(khAccess: khAccess)
-                        .padding(.horizontal).padding(.bottom)
+                        .padding()
                         .disabled(khAccess.status != .clean)
                 }
                 Tab("Hardware", systemImage: "hifispeaker") {

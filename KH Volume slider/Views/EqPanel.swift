@@ -97,74 +97,89 @@ struct EqBandPanel: View {
 
     var body: some View {
         #if os(macOS)
-        Grid(alignment: .topLeading) {
-            GridRow {
-                EqSlider(
-                    binding: $khAccess.eqs[selectedEq].frequency,
-                    name: "Frequency",
-                    unit: "Hz",
-                    range: 10...24000,
-                    logarithmic: true,
-                    selectedEqBand: selectedEqBand,
-                    khAccess: khAccess
+        VStack(spacing: 20) {
+            HStack {
+                Picker("Type:", selection: $khAccess.eqs[selectedEq].type[selectedEqBand]) {
+                    ForEach(Eq.EqType.allCases) { type in
+                        Text(type.rawValue).tag(type.rawValue)
+                    }
+                }
+                .pickerStyle(.menu)
+                .onChange(of: khAccess.eqs[selectedEq].type) {
+                    Task {
+                        try await khAccess.send()
+                    }
+                }
+                .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
+                
+                Text("Disable to change type")
+                    .opacity(khAccess.eqs[selectedEq].enabled[selectedEqBand] ? 1 : 0)
+                
+                Spacer()
+                
+                Toggle(
+                    "Enable", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand]
                 )
+                .toggleStyle(.switch)
+                .onChange(of: khAccess.eqs[selectedEq].enabled) {
+                    Task {
+                        try await khAccess.send()
+                    }
+                }
             }
-            GridRow {
-                EqSlider(
-                    binding: $khAccess.eqs[selectedEq].q,
-                    name: "Q",
-                    unit: nil,
-                    range: 0.1...16,
-                    logarithmic: true,
-                    selectedEqBand: selectedEqBand,
-                    khAccess: khAccess
-                )
-            }
-            GridRow {
-                EqSlider(
-                    binding: $khAccess.eqs[selectedEq].boost,
-                    name: "Boost",
-                    unit: "dB",
-                    range: -99...24,
-                    logarithmic: false,
-                    selectedEqBand: selectedEqBand,
-                    khAccess: khAccess
-                )
-            }
-            GridRow {
-                EqSlider(
-                    binding: $khAccess.eqs[selectedEq].gain,
-                    name: "Makeup",
-                    unit: "dB",
-                    range: -99...24,
-                    logarithmic: false,
-                    selectedEqBand: selectedEqBand,
-                    khAccess: khAccess
-                )
+            
+            Grid(alignment: .topLeading) {
+                GridRow {
+                    EqSlider(
+                        binding: $khAccess.eqs[selectedEq].frequency,
+                        name: "Frequency",
+                        unit: "Hz",
+                        range: 10...24000,
+                        logarithmic: true,
+                        selectedEqBand: selectedEqBand,
+                        khAccess: khAccess
+                    )
+                }
+                GridRow {
+                    EqSlider(
+                        binding: $khAccess.eqs[selectedEq].q,
+                        name: "Q",
+                        unit: nil,
+                        range: 0.1...16,
+                        logarithmic: true,
+                        selectedEqBand: selectedEqBand,
+                        khAccess: khAccess
+                    )
+                }
+                GridRow {
+                    EqSlider(
+                        binding: $khAccess.eqs[selectedEq].boost,
+                        name: "Boost",
+                        unit: "dB",
+                        range: -99...24,
+                        logarithmic: false,
+                        selectedEqBand: selectedEqBand,
+                        khAccess: khAccess
+                    )
+                }
+                GridRow {
+                    EqSlider(
+                        binding: $khAccess.eqs[selectedEq].gain,
+                        name: "Makeup",
+                        unit: "dB",
+                        range: -99...24,
+                        logarithmic: false,
+                        selectedEqBand: selectedEqBand,
+                        khAccess: khAccess
+                    )
+                }
             }
         }
-        HStack {
-            Picker("Type:", selection: $khAccess.eqs[selectedEq].type[selectedEqBand]) {
-                ForEach(Eq.EqType.allCases) { type in
-                    Text(type.rawValue).tag(type.rawValue)
-                }
-            }
-            .pickerStyle(.menu)
-            .frame(width: 160)
-            .onChange(of: khAccess.eqs[selectedEq].type) {
-                Task {
-                    try await khAccess.send()
-                }
-            }
-            .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
-            
-            Text("Disable to change type")
-                .opacity(khAccess.eqs[selectedEq].enabled[selectedEqBand] ? 1 : 0)
-
-            Spacer()
-
+        #elseif os(iOS)
+        VStack {
             Toggle(
-                "Enable band", isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand]
+                "Enable band",
+                isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand]
             )
             .toggleStyle(.switch)
             .onChange(of: khAccess.eqs[selectedEq].enabled) {
@@ -172,9 +187,33 @@ struct EqBandPanel: View {
                     try await khAccess.send()
                 }
             }
-        }
-        #elseif os(iOS)
-        VStack {
+            
+            HStack {
+                ZStack(alignment: .leading) {
+                    Text("Disable to change")
+                        .opacity(khAccess.eqs[selectedEq].enabled[selectedEqBand] ? 1 : 0)
+                        .foregroundStyle(.secondary)
+                    Text("Type")
+                        .opacity(khAccess.eqs[selectedEq].enabled[selectedEqBand] ? 0 : 1)
+                }
+
+                Spacer()
+
+                Picker("Type:", selection: $khAccess.eqs[selectedEq].type[selectedEqBand]) {
+                    ForEach(Eq.EqType.allCases) { type in
+                        Text(type.rawValue).tag(type.rawValue)
+                    }
+                }
+                .pickerStyle(.menu)
+                .onChange(of: khAccess.eqs[selectedEq].type) {
+                    Task {
+                        try await khAccess.send()
+                    }
+                }
+                .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
+            }
+            
+
             EqSlider(
                 binding: $khAccess.eqs[selectedEq].frequency,
                 name: "Frequency",
@@ -212,38 +251,6 @@ struct EqBandPanel: View {
                 khAccess: khAccess
             )
         }
-        VStack {
-            Picker("Type:", selection: $khAccess.eqs[selectedEq].type[selectedEqBand]) {
-                ForEach(Eq.EqType.allCases) { type in
-                    Text(type.rawValue).tag(type.rawValue)
-                }
-            }
-            .pickerStyle(.menu)
-            .frame(width: 160)
-            .onChange(of: khAccess.eqs[selectedEq].type) {
-                Task {
-                    try await khAccess.send()
-                }
-            }
-            .disabled(khAccess.eqs[selectedEq].enabled[selectedEqBand])
-            
-            Text("Disable to change type")
-                .opacity(khAccess.eqs[selectedEq].enabled[selectedEqBand] ? 1 : 0)
-            
-            Spacer()
-
-            Toggle(
-                "Enable band",
-                isOn: $khAccess.eqs[selectedEq].enabled[selectedEqBand]
-            )
-            .toggleStyle(.switch)
-            .onChange(of: khAccess.eqs[selectedEq].enabled) {
-                Task {
-                    try await khAccess.send()
-                }
-            }
-
-        }
         #endif
     }
 }
@@ -257,17 +264,9 @@ struct EqPanel_: View {
         var numBands: Int {
             khAccess.eqs[selectedEq].enabled.count
         }
-
-        VStack {
-            EqBandPanel(
-                khAccess: khAccess,
-                selectedEq: selectedEq,
-                selectedEqBand: selectedEqBand
-            )
-            
-            Spacer()
-
-            #if os(macOS)
+        
+        #if os(macOS)
+        VStack(spacing: 20) {
             VStack {
                 ForEach((1...numBands/10), id: \.self) { row in
                     Picker("", selection: $selectedEqBand) {
@@ -278,15 +277,25 @@ struct EqPanel_: View {
                     .pickerStyle(.segmented)
                 }
             }
-            #elseif os(iOS)
-            Picker(selection: $selectedEqBand, label: Text("EQ Band")) {
-                ForEach((1...numBands), id: \.self) { i in
-                    Text("\(i)").tag(i - 1)
-                }
-            }
-            .pickerStyle(.wheel)
-            #endif
+            EqBandPanel(
+                khAccess: khAccess,
+                selectedEq: selectedEq,
+                selectedEqBand: selectedEqBand
+            )
         }
+        #elseif os(iOS)
+        VStack {
+            Stepper(value: $selectedEqBand, in: 0 ... numBands - 1) {
+                Text("Band \(self.selectedEqBand + 1) / \(numBands)")
+            }
+
+            EqBandPanel(
+                khAccess: khAccess,
+                selectedEq: selectedEq,
+                selectedEqBand: selectedEqBand
+            )
+        }
+        #endif
     }
 }
 
@@ -295,19 +304,26 @@ struct EqPanel: View {
 
     @State private var selectedEq: Int = 0
     var body: some View {
-        VStack(spacing: 20) {
-            Picker("", selection: $selectedEq) {
-                Text("post EQ").tag(0)
-                Text("calibration EQ").tag(1)
+        EqChart(khAccess: khAccess).frame(height: 200)
+
+        ScrollView {
+            VStack(spacing: 20) {
+                Picker("", selection: $selectedEq) {
+                    Text("post EQ").tag(0)
+                    Text("calibration EQ").tag(1)
+                }
+                .pickerStyle(.segmented)
+                //.padding()
+                
+                ZStack {
+                    EqPanel_(khAccess: khAccess, selectedEq: 0)
+                        .opacity(selectedEq == 0 ? 1 : 0)
+                    EqPanel_(khAccess: khAccess, selectedEq: 1)
+                        .opacity(selectedEq == 1 ? 1 : 0)
+                }
+                //.padding()
             }
-            .pickerStyle(.segmented)
-                        
-            ZStack {
-                EqPanel_(khAccess: khAccess, selectedEq: 0)
-                    .opacity(selectedEq == 0 ? 1 : 0)
-                EqPanel_(khAccess: khAccess, selectedEq: 1)
-                    .opacity(selectedEq == 1 ? 1 : 0)
-            }
+            .padding()
         }
     }
 }
